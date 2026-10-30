@@ -7,10 +7,22 @@ else {
     apply plugin: 'com.android.library'
 }
 
+// MI CI can select a phone ABI without changing the inherited local defaults.
+def miAbis = (findProperty('miAbis') ?: 'arm64-v8a,x86_64').split(',').toList()
+if (!miAbis || !miAbis.every { it in ['arm64-v8a', 'x86_64'] }) {
+    throw new GradleException('miAbis must contain arm64-v8a and/or x86_64')
+}
+def miJobs = (findProperty('miJobs') ?: '2').toInteger()
+if (miJobs < 1 || miJobs > 16) {
+    throw new GradleException('miJobs must be between 1 and 16')
+}
+
 def assetNames = ["lang", "mods", "dynos", "palettes"]
 
 android {
     compileSdkVersion 33
+    buildToolsVersion "34.0.0"
+    ndkVersion "27.0.12077973"
     defaultConfig {
         if (buildAsApplication) {
             applicationId "com.maniscat2.sm64coopdx"
@@ -27,8 +39,8 @@ android {
         }
         externalNativeBuild {
             ndkBuild {
-                arguments "-j10"
-                abiFilters 'arm64-v8a', 'x86_64'
+                arguments "-j${miJobs}", "TOUCH_CONTROLS=1"
+                abiFilters(*miAbis)
             }
         }
     }
@@ -53,12 +65,13 @@ android {
             }
             dest.mkdirs()
             assetNames.each { folderName ->
-                def src = new File(rootProject.projectDir, folderName)
-                if (src.exists()) {
-                    copy {
-                        from src
-                        into new File(dest, folderName)
-                    }
+                def src = new File(rootProject.projectDir.parentFile, folderName)
+                if (!src.isDirectory()) {
+                    throw new GradleException("Missing game asset directory: ${src}")
+                }
+                copy {
+                    from src
+                    into new File(dest, folderName)
                 }
             }
         }

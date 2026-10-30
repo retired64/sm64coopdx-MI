@@ -115,14 +115,15 @@ durante esta verificación.
 El workflow heredado dispara push/PR sobre android-dev y contiene jobs de varias
 plataformas. No sirve todavía como política de validación propia de mi-main.
 
-- [ ] Crear workflow propio Android con ejecución manual y validación de PR hacia mi-main.
+- [x] Crear workflow propio Android con ejecución manual.
+- [ ] Añadir validación automática de PR hacia mi-main después del primer build validado.
 - [ ] Evitar ejecutar builds de escritorio para validar el MVP Android.
-- [ ] Mantener el workflow heredado intacto cuando sea viable; revisar sus disparadores antes de decidir si deshabilitarlo en el fork.
+- [x] Mantener el workflow heredado intacto cuando sea viable; revisar sus disparadores antes de decidir si deshabilitarlo en el fork.
 - [ ] Fijar Java, SDK, NDK y dependencias según el build validado.
-- [ ] Compilar inicialmente APK de prueba; no crear release, tag ni publicación automática.
-- [ ] Usar firma de prueba adecuada sin claves privadas de publicación.
+- [x] Compilar inicialmente APK de prueba; no crear release, tag ni publicación automática.
+- [x] Usar firma de prueba adecuada sin claves privadas de publicación.
 - [ ] Producir artifact APK instalable y logs; identificar SHA MI y base upstream.
-- [ ] Establecer permisos mínimos de Actions, sin acceso a secretos en PR no confiables.
+- [x] Establecer permisos mínimos de Actions, sin acceso a secretos en PR no confiables.
 - [ ] Comprobar el workflow en una ejecución real y corregir el procedimiento según evidencia.
 - [ ] Documentar una orden de build local equivalente al flujo validado.
 
@@ -462,3 +463,16 @@ que esos controles están habilitados.
 Guía: [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md). Registro:
 [upstream/2026-10-29-setup.md](upstream/2026-10-29-setup.md).
 No se configuraron CI/protecciones GitHub ni se promovió un motor nuevo.
+
+
+## Preparación del workflow MI — 2026-10-29
+
+- [x] mi-actions-build.yml manual, sin ROM ni secrets, artefacto ARM64 y retención 7 días.
+- [x] SDK/NDK fijados, C++17 y parámetros ABI/paralelismo Gradle.
+- [x] Corregida fuente de recursos Gradle a raíz; fallo explícito si faltan carpetas.
+- [x] Verificador APK, pruebas de artefactos incompletos y actionlint correctos.
+- [ ] Publicar el commit y decidir cambio de rama predeterminada a mi-main.
+- [ ] Primera ejecución real en Actions y prueba física del APK de Gradle.
+
+El make del host prepara fuentes generadas; no se publica un artefacto de escritorio.
+Detalle, comandos y limitaciones: [MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md).

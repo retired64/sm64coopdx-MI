@@ -1,0 +1,109 @@
+name: MI Android APK
+run-name: MI Android APK · ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mi-android-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  android:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      CC: clang
+      CXX: clang++
+      NDK_VERSION: 27.0.12077973
+      BUILD_TOOLS_VERSION: 34.0.0
+    steps:
+      - name: Checkout selected commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install host build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang python3 libglew-dev libsdl2-dev libcurl4-openssl-dev zlib1g-dev zip unzip
+
+      - name: Validate MI contracts without a ROM
+        run: |
+          python3 tools/mi/embed_catalog.py --check
+          python3 tools/mi/test_catalog.py
+          python3 tools/mi/test_requests.py
+          python3 tests/mi/apk_test.py
+          git diff --exit-code
+          test ! -e baserom.us.z64
+
+      - name: Install pinned Android SDK and NDK
+        run: |
+          test -n "${ANDROID_HOME:-}"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses < <(yes) > /dev/null
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platforms;android-33" "build-tools;$BUILD_TOOLS_VERSION" "ndk;$NDK_VERSION"
+          printf 'sdk.dir=%s\n' "$ANDROID_HOME" > platform/local.properties
+
+      - name: Prepare generated game sources without extracting a ROM
+        run: |
+          make -j2 TOUCH_CONTROLS=1 DISCORD_SDK=0 UPDATER=0 EXTRA_CPP_FLAGS=-std=c++17
+          test -s build/us_pc/assets/mario_anim_data.c
+          test -s build/us_pc/assets/demo_data.c
+          test ! -e baserom.us.z64
+
+      - name: Build Android ARM64 release
+        run: |
+          bash platform/gradlew -p platform --no-daemon --max-workers=2 --stacktrace -PmiAbis=arm64-v8a -PmiJobs=2 :app:assembleRelease
+
+      - name: Align and sign internal test APK
+        run: |
+          mkdir -p dist
+          TOOLS="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION"
+          "$TOOLS/zipalign" -f -p 4 platform/app/build/outputs/apk/release/app-release-unsigned.apk dist/sm64coopdx-MI-arm64.apk
+          "$TOOLS/apksigner" sign --key platform/android/key.pk8 --cert platform/android/certificate.pem dist/sm64coopdx-MI-arm64.apk
+          "$TOOLS/apksigner" verify --verbose --print-certs dist/sm64coopdx-MI-arm64.apk
+          "$TOOLS/zipalign" -c -p 4 dist/sm64coopdx-MI-arm64.apk
+
+      - name: Verify native integration and packaged assets
+        run: |
+          NATIVE_DIR=platform/app/build/intermediates/stripped_native_libs/release/stripReleaseDebugSymbols/out/lib
+          python3 tools/mi/verify_ci_apk.py dist/sm64coopdx-MI-arm64.apk --native-dir "$NATIVE_DIR" --report dist/build-info.json
+          NM="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
+          "$NM" -D --defined-only "$NATIVE_DIR/arm64-v8a/libmain.so" > "$RUNNER_TEMP/mi-native-symbols.txt"
+          for symbol in mi_catalog_panel_create mi_catalog_request_start rom_assets_load main_rom_handler; do
+            grep -Eq "[[:space:]]${symbol}$" "$RUNNER_TEMP/mi-native-symbols.txt"
+          done
+          (cd dist && sha256sum sm64coopdx-MI-arm64.apk > SHA256SUMS.txt)
+          {
+            echo '### MI Android ARM64 — internal test build'
+            echo "Commit: $GITHUB_SHA"
+            echo 'No ROM or secrets used. The game asks for the user ROM at startup.'
+            echo 'Uses the inherited public test signing key; no release is published.'
+            cat dist/SHA256SUMS.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified APK and build information
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: sm64coopdx-MI-arm64-${{ github.sha }}
+          path: |
+            dist/sm64coopdx-MI-arm64.apk
+            dist/build-info.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

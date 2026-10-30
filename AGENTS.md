@@ -49,6 +49,7 @@ de MI se centraliza en mi-docs/; AGENTS.md permanece en la raíz:
 | Ruta | Para qué se consulta |
 |---|---|
 | [RULES.md](mi-docs/RULES.md) | Contratos, revisión semántica, inventario de archivos y tres commits iniciales |
+| [MI_ACTIONS_BUILD.md](mi-docs/MI_ACTIONS_BUILD.md) | Workflow manual, toolchain, artefactos y comandos gh; comprobar estado real del primer run |
 | [UPSTREAM_SETUP.md](mi-docs/UPSTREAM_SETUP.md) | Configuración efectiva por clon y herramienta setup/check |
 | [MANTENER-UPDATES.md](mi-docs/MANTENER-UPDATES.md) | Upstream estable, ramas sync, conflictos, pruebas, promoción y recuperación |
 | [MI_INITIAL_PREPARATION_CHECKLIST.md](mi-docs/MI_INITIAL_PREPARATION_CHECKLIST.md) | Preparación, seguimiento, artefactos y pendientes reales |

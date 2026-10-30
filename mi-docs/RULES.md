@@ -34,8 +34,8 @@ Implementado y versionado al inicio de este documento:
 - Pruebas de parser, red/caché/cierre, idiomas y geometría, y build APK Termux.
 
 No implementado: instalar desde catálogo, recibos/asociaciones, actualización
-individual/Update all, SQLite, actualización automática del APK ni CI específico
-MI. Instalar debe continuar deshabilitado hasta que exista el flujo completo.
+individual/Update all, SQLite ni actualización automática del APK. El workflow
+MI está preparado, con primera ejecución remota pendiente (MI_ACTIONS_BUILD.md). Instalar debe continuar deshabilitado hasta que exista el flujo completo.
 No describir pruebas de planes futuros como resultados actuales.
 
 Resultado esperado de trabajo futuro: integración pequeña, localizable, con
@@ -470,3 +470,15 @@ la ubicación vigente. No mover documentación heredada del juego por esta regla
 audita remotos/seguimiento y valores locales con setup/check. No pertenece a los
 tres commits iniciales. Detalles: [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md).
 No confundir check offline con frescura remota ni configuración con integración.
+
+
+## 15. Build CI preparado, pendiente de ejecución remota
+
+[MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md) documenta el workflow
+[mi-actions-build.yml](../.github/workflows/mi-actions-build.yml). Nuevos archivos:
+[verify_ci_apk.py](../tools/mi/verify_ci_apk.py) y
+[apk_test.py](../tests/mi/apk_test.py). Adaptados Android.mk (C++17) y
+platform/app/build.gradle (NDK/Build Tools, ABI/jobs y rutas de recursos).
+No forman parte de los tres commits iniciales. Nunca atribuir a un verificador
+local el éxito del build Gradle remoto. La ROM sigue siendo un dato del usuario
+solicitado al arrancar, no una entrada de este workflow.

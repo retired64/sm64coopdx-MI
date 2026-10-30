@@ -7,6 +7,9 @@ La documentación heredada del juego permanece en sus rutas originales.
 
 ## Reglas y mantenimiento
 
+- [MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md): workflow manual Android sin ROM,
+  artefactos, firma de prueba y comandos gh para ejecución/descarga.
+
 - [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md): preparación efectiva y reproducible por clon.
 - [Registro inicial de upstream](upstream/2026-10-29-setup.md): SHAs y auditoría.
 

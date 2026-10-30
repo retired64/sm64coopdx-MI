@@ -1307,3 +1307,15 @@ requiere merge. Se mantiene mi-main en 76b961277 durante la preparación.
 [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md) documenta el estado y la herramienta de
 configuración por clon; el [registro](upstream/2026-10-29-setup.md) distingue
 preparación de una sincronización real. CI y protecciones siguen pendientes.
+
+
+## 29. Workflow Android sin baserom — 2026-10-29
+
+Se prepara mi-actions-build.yml manual para APK ARM64 con firma de prueba y
+artefactos, sin descargar ni extraer ROM. La rama carga los recursos originales
+desde la ROM del usuario al arrancar; la explicación previa de necesitar extraer
+ROM en CI no describe este port. Se corrige la ruta de copia de recursos Gradle.
+
+[MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md) registra flujo y validaciones locales.
+Primera ejecución Ubuntu/Gradle y prueba física pendientes; no se declara un build
+CI exitoso antes de ejecutarlo. Publicación y rama predeterminada son pasos explícitos.
