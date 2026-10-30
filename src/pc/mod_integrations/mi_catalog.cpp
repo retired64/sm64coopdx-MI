@@ -17,7 +17,7 @@ struct MiCatalog {
 };
 
 namespace {
-constexpr size_t MAX_BYTES = 8 * 1024 * 1024;
+constexpr size_t MAX_BYTES = 16 * 1024 * 1024;
 constexpr size_t MAX_MODS = 5000;
 const char SAMPLE[] =
 #include "mi_catalog_sample.inc"
@@ -84,7 +84,7 @@ bool contains_folded(const char* text, const char* query) {
 }
 }
 
-extern "C" struct MiCatalog* mi_catalog_parse(const char* text, size_t length) {
+extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t length, const char* language) {
     MiCatalog* catalog = new (std::nothrow) MiCatalog;
     if (!catalog) return nullptr;
     if (!text || length == 0 || length > MAX_BYTES) return catalog;
@@ -116,6 +116,26 @@ extern "C" struct MiCatalog* mi_catalog_parse(const char* text, size_t length) {
             std::string title = field(mod, "name");
             if (title.empty()) title = field(mod, "title");
             if (!valid_id(modId) || !ids.insert(modId).second || title.empty()) return catalog;
+            const auto versions = mod.find("versions");
+            if (versions == mod.end() || !versions->is_array()) return catalog;
+            std::set<std::string> versionIds;
+            for (const auto& version : *versions) {
+                if (!version.is_object()) return catalog;
+                auto versionId = field(version, "version_id");
+                if (versionId.empty() || !versionIds.insert(versionId).second) return catalog;
+                auto files = version.find("files");
+                auto resolved = version.find("resolved");
+                if (files == version.end() || !files->is_array() || resolved == version.end() || !resolved->is_boolean()) return catalog;
+                if (resolved->get<bool>() && files->empty()) return catalog;
+                std::set<std::string> fileIds;
+                for (const auto& file : *files) {
+                    if (!file.is_object()) return catalog;
+                    auto fileId = field(file, "file_id");
+                    auto url = field(file, "download_url");
+                    if (fileId.empty() || !fileIds.insert(fileId).second || field(file, "filename").empty() ||
+                        (url.compare(0, 8, "https://") != 0 && url.compare(0, 7, "http://") != 0)) return catalog;
+                }
+            }
             MiCatalogEntry entry = {};
             std::memcpy(entry.id, modId.c_str(), modId.size() + 1);
             display(entry.title, title);
@@ -123,7 +143,17 @@ extern "C" struct MiCatalog* mi_catalog_parse(const char* text, size_t length) {
             display(entry.author, field(mod, "author"));
             display(entry.version, field(mod, "version"));
             display(entry.category, field(mod, "category"));
-            display(entry.description, field(mod, "description"));
+            std::string description = field(mod, "description");
+            auto translations = mod.find("description_translations");
+            if (translations != mod.end()) {
+                if (!translations->is_object()) return catalog;
+                for (const auto& translation : *translations) if (!translation.is_string()) return catalog;
+                if (language && language[0]) {
+                    auto translated = field(*translations, language);
+                    if (!translated.empty()) description = translated;
+                }
+            }
+            display(entry.description, description);
             entries.push_back(entry);
         }
         catalog->entries = std::move(entries);
@@ -135,6 +165,9 @@ extern "C" struct MiCatalog* mi_catalog_parse(const char* text, size_t length) {
     return catalog;
 }
 
+extern "C" struct MiCatalog* mi_catalog_parse(const char* text, size_t length) {
+    return mi_catalog_parse_language(text, length, "en");
+}
 extern "C" struct MiCatalog* mi_catalog_sample(void) { return mi_catalog_parse(SAMPLE, sizeof(SAMPLE) - 1); }
 extern "C" void mi_catalog_free(struct MiCatalog* catalog) { delete catalog; }
 extern "C" enum MiCatalogStatus mi_catalog_status(const struct MiCatalog* catalog) {

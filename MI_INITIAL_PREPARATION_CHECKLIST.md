@@ -336,3 +336,21 @@ correctos. Prueba física del parche pendiente. No se ejecutó Gradle.
 
 Próximo paso del roadmap: catálogo remoto y última caché válida. Esta confirmación
 no implica que descarga/instalación o actualización de mods estén implementadas.
+
+
+## Etapa 2 — catálogo remoto y caché
+
+- [x] Catálogo real, consulta fuera del hilo UI y textos EN/ES/PT.
+- [x] Caché válida de 15 minutos, actualización manual y respaldo ante errores.
+- [x] HTTPS verificado con certificados del sistema y libcurl del APK.
+- [x] Pruebas de parser, red/caché/cierre y endpoint real (1307 mods).
+- [ ] Prueba física del catálogo remoto y estados sin conexión.
+
+Arquitectura, límites y validación: [docs/mi/CATALOG_REMOTE.md](docs/mi/CATALOG_REMOTE.md).
+Instalación y actualización de mods continúan pendientes.
+
+- [x] APK de etapa 2 compilado; firma, alineación, CRC y libmain verificados.
+- [x] Generadores sin diferencias y git diff --check correcto.
+
+APK: build/us_pc/sm64coopdx.apk (120138041 bytes).
+SHA-256: 117ad63202cfd2c396679e331403231b64b4fe8593cdce7c632d1b8ff1c8961d.

@@ -1180,3 +1180,14 @@ de la matriz de idiomas, temas y mando.
 
 Siguiente etapa acordada en el roadmap: consumir el catálogo remoto con caché
 válida. La instalación y las actualizaciones siguen como etapas posteriores.
+
+
+## 22. Integración del catálogo remoto — 2026-10-29
+
+MI consume el JSON real mediante un servicio nativo asíncrono, con última copia
+válida y respaldo, reutilización por 15 minutos y actualización manual. Conserva
+la búsqueda y detalles dentro del juego. Instalar sigue deshabilitado hasta
+completar el flujo de instalación con resultado real y recibos. No se duplica
+la pantalla de activación.
+
+Detalles y pruebas pendientes: [docs/mi/CATALOG_REMOTE.md](docs/mi/CATALOG_REMOTE.md).

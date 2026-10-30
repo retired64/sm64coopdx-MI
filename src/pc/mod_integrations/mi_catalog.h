@@ -21,6 +21,7 @@ struct MiCatalogEntry {
 };
 
 struct MiCatalog* mi_catalog_parse(const char* json, size_t length);
+struct MiCatalog* mi_catalog_parse_language(const char* json, size_t length, const char* language);
 struct MiCatalog* mi_catalog_sample(void);
 void mi_catalog_free(struct MiCatalog* catalog);
 enum MiCatalogStatus mi_catalog_status(const struct MiCatalog* catalog);

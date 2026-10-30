@@ -51,6 +51,17 @@ int main(int argc, char** argv) {
     bad = sample; bad["mods"][0]["id"] = std::string(64, 'x'); invalid(bad);
     bad = sample; bad["mods"][0]["name"] = ""; invalid(bad);
     bad = sample; bad["mods"][1] = nullptr; invalid(bad);
+    bad = sample; bad["mods"][0]["versions"].push_back(bad["mods"][0]["versions"][0]); invalid(bad);
+    bad = sample; bad["mods"][0]["versions"][0]["files"].push_back(bad["mods"][0]["versions"][0]["files"][0]); invalid(bad);
+    bad = sample; bad["mods"][0]["versions"][0]["files"] = json::array(); invalid(bad);
+    bad = sample; bad["mods"][0]["description_translations"] = "invalid"; invalid(bad);
+    auto translated = sample;
+    translated["mods"][0]["description_translations"] = {{"es", "Descripción traducida"}};
+    auto rawTranslated = translated.dump();
+    catalog = mi_catalog_parse_language(rawTranslated.data(), rawTranslated.size(), "es");
+    assert(std::strcmp(mi_catalog_entry(catalog, 0)->description, "Descripción traducida") == 0);
+    mi_catalog_free(catalog);
+
     catalog = mi_catalog_parse("{broken", 7);
     assert(mi_catalog_status(catalog) == MI_CATALOG_INVALID);
     mi_catalog_free(catalog);
@@ -59,7 +70,7 @@ int main(int argc, char** argv) {
     mi_catalog_free(catalog);
 
     auto minimal = sample;
-    minimal["mods"] = json::array({{{"id", 12}, {"name", "Minimal"}}});
+    minimal["mods"] = json::array({{{"id", 12}, {"name", "Minimal"}, {"versions", json::array()}}});
     minimal["mod_count"] = 1;
     catalog = parse(minimal);
     assert(mi_catalog_status(catalog) == MI_CATALOG_READY);

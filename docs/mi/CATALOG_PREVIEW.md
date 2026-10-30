@@ -122,3 +122,11 @@ The user confirmed that the updated APK worked on their phone after the TITLE
 and enlarged-scale clipping fixes. This records general physical confirmation;
 individual language/theme/controller matrix results have not been supplied.
 Earlier pending-device notes describe the state before this confirmation.
+
+
+## Superseded by stage 2
+
+This document records the historical embedded preview. The current panel loads
+the remote catalog with asynchronous requests and a persistent last-valid cache.
+See [CATALOG_REMOTE.md](CATALOG_REMOTE.md) for current limits, trust boundaries,
+ownership and checks. The fixture remains only for regression tests.
