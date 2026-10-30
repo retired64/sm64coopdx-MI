@@ -476,3 +476,10 @@ No se configuraron CI/protecciones GitHub ni se promovió un motor nuevo.
 
 El make del host prepara fuentes generadas; no se publica un artefacto de escritorio.
 Detalle, comandos y limitaciones: [MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md).
+
+
+### Primera ejecución CI: grafo Gradle — 2026-10-30
+
+Run 41012336610: tests y make host correctos; Gradle rechazó :app porque la entrada
+heredada era :platform:app. Se prepara settings Android standalone y preflight de
+tareas. Reintento real pendiente al crear esta nota; no marcar APK CI completado.

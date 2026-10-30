@@ -482,3 +482,11 @@ platform/app/build.gradle (NDK/Build Tools, ABI/jobs y rutas de recursos).
 No forman parte de los tres commits iniciales. Nunca atribuir a un verificador
 local el éxito del build Gradle remoto. La ROM sigue siendo un dato del usuario
 solicitado al arrancar, no una entrada de este workflow.
+
+
+### Grafo Gradle Android
+
+platform/settings.gradle define :app al usar -p platform. El settings.gradle raíz
+heredado define :platform:app. No intercambiar nombres de tareas sin comprobar la
+entrada efectiva. La ruta de assets se deriva del directorio del módulo app, no
+de asumir dónde está rootProject. CI debe comprobar tareas antes del make del host.

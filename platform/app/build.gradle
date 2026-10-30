@@ -65,7 +65,7 @@ android {
             }
             dest.mkdirs()
             assetNames.each { folderName ->
-                def src = new File(rootProject.projectDir.parentFile, folderName)
+                def src = new File(projectDir.parentFile.parentFile, folderName)
                 if (!src.isDirectory()) {
                     throw new GradleException("Missing game asset directory: ${src}")
                 }

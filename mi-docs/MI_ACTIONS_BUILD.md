@@ -136,3 +136,16 @@ de la raíz y genera assets; NDK genera bibliotecas; verificador lee APK y bibli
 stripped; upload-artifact publica únicamente dist. No se agregan caches persistentes,
 hilos ni Futures propios. Revisados Makefile preparatorio, Android.mk, Gradle,
 idiomas, librerías y artefactos. Persisten las pruebas físicas pendientes.
+
+
+## Corrección de primera ejecución — 2026-10-30
+
+Run 41012336610 falló antes de compilar Android: :app no existía en el grafo
+heredado, definido por settings.gradle raíz como :platform:app. El make del host
+y las pruebas previas sí terminaron. Se añade platform/settings.gradle como
+entrada standalone para -p platform, con módulo :app. El settings de raíz se
+conserva; la ruta de recursos se deriva de projectDir del módulo y sirve para
+ambas entradas. Se valida :app:tasks antes de la compilación del host.
+
+El primer fallo no fue falta de ROM. La confirmación del build Android completo
+se registrará tras la ejecución corregida, sin inferirla de una validación estática.

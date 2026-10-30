@@ -1,0 +1,3 @@
+// Standalone Android entry point used by -p platform in MI CI.
+rootProject.name = "sm64coopdx-mi-android"
+include ':app'

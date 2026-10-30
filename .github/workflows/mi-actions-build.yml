@@ -58,6 +58,10 @@ jobs:
           "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platforms;android-33" "build-tools;$BUILD_TOOLS_VERSION" "ndk;$NDK_VERSION"
           printf 'sdk.dir=%s\n' "$ANDROID_HOME" > platform/local.properties
 
+      - name: Validate standalone Android task graph before host compilation
+        run: |
+          bash platform/gradlew -p platform --no-daemon --max-workers=2 --stacktrace -PmiAbis=arm64-v8a -PmiJobs=2 :app:tasks --all
+
       - name: Prepare generated game sources without extracting a ROM
         run: |
           make -j2 TOUCH_CONTROLS=1 DISCORD_SDK=0 UPDATER=0 EXTRA_CPP_FLAGS=-std=c++17
