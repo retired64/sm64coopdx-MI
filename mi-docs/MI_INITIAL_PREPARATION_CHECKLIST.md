@@ -604,3 +604,82 @@ la toolchain. Solo se añadieron suites al workflow público manual; no se ejecu
 Sin commit ni push. La limpieza documental local de fronteras públicas se conserva;
 el historial remoto anterior no fue reescrito. Ver [CATALOG_UPDATES.md](CATALOG_UPDATES.md)
 y [CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md).
+
+
+### Reorganización de detalles — 2026-10-30
+
+- [x] Separar identificación, elección de archivo y descripción con encabezados.
+- [x] Incorporar acentos de color adaptados a superficie clara/oscura.
+- [x] Conservar acciones y progreso en el pie fijo y usar fallback EN/ES/PT.
+- [ ] Confirmar físicamente lectura, foco, escalas y temas del detalle nuevo.
+
+Cambios locales de presentación; no implementan reemplazo de mods ni alteran
+recibos. Ver [CATALOG_ACCESSIBILITY.md](CATALOG_ACCESSIBILITY.md).
+
+Validación local: generador --check, test_catalog.py, test_updates.py,
+test_thumbnails.py --bundled-curl y git diff --check correctos. Build Makefile
+Termux correcto; firma, zipalign 4 KiB, CRC y coincidencia de libmain correctos.
+APK de prueba: /sdcard/Download/sm64coopdx-MI-details-local.apk.
+Tamaño: 123885881 bytes. SHA-256:
+1282de8e1d5063581986ecff061330bfc81dc69ac9d86b9b78b0f724458fa148.
+No se ejecutó Gradle ni se publicaron estos cambios. Prueba física pendiente.
+
+
+### UX de novedades — 2026-10-30
+
+- [x] Una acción manual para catálogo y comprobación de versiones MI.
+- [x] Filtro de candidatas independiente y local, sin cambio automático de vista.
+- [x] Mensajes distintos para cero asociaciones, cero novedades y datos inciertos.
+- [x] Conservar errores de transporte/almacenamiento al comparar copia disponible.
+- [ ] Validación física del flujo unificado y temas/escalas.
+
+Contrato: [CATALOG_UPDATES.md](CATALOG_UPDATES.md). Sin cambios en recibos,
+comparador de versiones, instalador ni activación del juego.
+
+Validación local correcta: test_catalog.py, test_updates.py, test_thumbnails.py
+--bundled-curl, generador --check y git diff --check. Build Makefile Termux,
+firma APK, alineación 4 KiB, CRC y coincidencia de libmain correctos.
+APK: /sdcard/Download/sm64coopdx-MI-news-local.apk; 123889977 bytes.
+SHA-256: c3c8545251ab89d9bc1a0292144dc1424e533d55a1e715953aad4d00d5bab6bb.
+Gradle y pruebas físicas pendientes. Sin commit/push de esta iteración.
+
+
+### Identidad horizontal del mod — 2026-10-30
+
+- [x] Revisar las dos capturas nuevas de detalles.
+- [x] Imagen, título/autor y versión/categoría distribuidos horizontalmente.
+- [x] Reflujo por ancho y altura medida con texto envuelto.
+- [x] Solicitud/slot propios del detalle, liberados al cerrar; placeholder si falla.
+- [ ] Prueba física con escala grande y texto largo.
+
+Contrato y lifecycle en [CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md).
+
+Build Makefile Termux correcto. Firma, alineación 4 KiB, CRC y coincidencia de
+libmain correctos. APK de prueba:
+/sdcard/Download/sm64coopdx-MI-details-header-local.apk; 123898169 bytes.
+SHA-256: 5686706962c672826b54a2bf852b8146cd93fb3e3e636e7a016bab9e995b22f6.
+No se ejecutó Gradle; revisión física pendiente. Cambios locales sin commit/push.
+
+
+### Controles compactos — 2026-10-30
+
+- [x] Instalar debajo de categoría, con ancho ajustado al texto.
+- [x] Selector con flechas pequeñas; sin flechas para archivo único.
+- [x] Volver/Cancelar fijo y pie de estado condicionado al contexto.
+- [x] Flechas verticales agrupadas, sin alterar menús ajenos a MI.
+- [x] Conservar error de inicio de operación hasta reintento/cambio de archivo.
+- [ ] Validación física de escala, foco, scroll, instalación y cancelación.
+
+No se añaden texturas nuevas ni soporte WebP. Se conservan los cambios locales
+previos. Sin commit/push de esta iteración.
+
+Compilación local Makefile Termux correcta; firma, alineación 4 KiB, CRC y
+coincidencia de libmain correctos. APK:
+/sdcard/Download/sm64coopdx-MI-compact-local.apk; 123906361 bytes.
+SHA-256: c3fb4f2b448ef86e632f240beb48857a4a7170be199944951c16a2aa7233f3ac.
+Gradle y pruebas físicas pendientes.
+
+Validación correcta: test_catalog.py, test_updates.py, test_thumbnails.py
+--bundled-curl, test_install.py --bundled-curl, embed_catalog.py --check y
+git diff --check. Incluye cancelación, conflictos y recuperación del instalador
+en temporales; no equivale a prueba física de los controles nuevos.

@@ -100,3 +100,28 @@ variantes, vigente no resuelta, formato no soportado, borrados, conflictos, JSON
 roto, diario pendiente, ocupado, cancelación y destrucción con worker activo.
 Solo temporales. Prueba física pendiente: escala/idiomas, filtro/volver, red/copia
 guardada, cierre y nueva instalación posterior. APK y evidencia en el checklist.
+
+
+### Consulta unificada de novedades — 2026-10-30
+
+Esta nota supera el flujo anterior con dos acciones de descarga. «Buscar novedades»
+es la única acción manual de red: fuerza una consulta del catálogo y, al terminar,
+compara los recibos MI contra el snapshot válido. El botón queda deshabilitado
+durante ambas fases. Abrir el catálogo conserva su política de caché habitual;
+no implica reemplazar mods ni iniciar una actualización automática.
+
+«Actualizaciones (N)» es únicamente un filtro local, habilitado cuando hay
+candidatos comprobados. Alterna con «Ver todos los mods» sin red ni nueva lectura
+de recibos. Conserva la búsqueda y vuelve a la primera página; terminar la consulta
+no activa el filtro automáticamente. Catálogo nuevo o revisión de instalación
+invalida candidatos y filtro. No existe otra caché ni otro trabajador.
+
+El resumen distingue candidatos, ausencia de recibos MI, ausencia de novedades
+y comprobaciones incompletas. Una ruta ausente se comunica como instalación sin
+verificar, nunca como una eliminación realizada por MI. Los errores de red o de
+guardado conservan su mensaje aunque se pueda comparar la copia disponible.
+La vista previa de una actualización sigue sin habilitar el reemplazo de archivos.
+
+Prueba física pendiente: tocar filtro repetidamente sin nueva consulta, búsqueda
+sin coincidencias, cero recibos, candidatas, rutas ausentes, fallo de red con copia
+guardada, cierre durante ambas fases y escala DJUI grande.

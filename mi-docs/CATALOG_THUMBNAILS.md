@@ -94,3 +94,28 @@ Estas pruebas no acreditan render GPU ni input táctil. Falta prueba física de
 miniaturas correctas al paginar/filtrar/reabrir, imágenes ausentes, offline, escala
 grande, temas claros/oscuros, mando y fluidez. No se afirma contraste certificado
 ni memoria GPU medida. El checklist registra build/APK y pendientes reales.
+
+
+### Cabecera horizontal de detalles — 2026-10-30
+
+Se revisaron las capturas de 16:11 y 16:12: el bloque vertical estrecho desplazaba
+el selector y ocultaba información inicial. La identidad ahora ocupa el ancho
+del cuerpo: miniatura a la izquierda, título y autor a su lado y versión/categoría
+en una columna derecha cuando hay al menos 950 unidades lógicas disponibles.
+Con menos ancho, versión y categoría pasan debajo del bloque imagen/título/autor.
+La imagen mide 144 unidades, o 96 en anchos menores de 500. No se reduce el texto
+para mantener columnas; la altura se calcula midiendo cada etiqueta envuelta.
+Solo los párrafos mantienen el máximo de lectura de 1000 unidades. Selector,
+separadores y pie fijo mantienen sus controles nativos y desplazamiento.
+
+El detalle copia metadatos en widgets y conserva su propia solicitud de imagen
+y lease del pool de texturas. El trabajador no conoce DJUI: el hilo principal
+consume RGBA y publica en el slot estable. Se reutilizan descarga/caché de
+miniaturas, sin otro formato persistido ni copia del catálogo. El cierre cancela
+la solicitud y libera el lease; el pool conserva sus direcciones de memoria.
+Fallo de imagen o agotamiento de slots muestra MOD sin bloquear la instalación.
+
+Pendiente en teléfono: escala grande, títulos/autores/categorías largos, temas,
+scroll completo, volver durante carga de imagen y reapertura repetida del detalle.
+La versión de cabecera corresponde al catálogo; el selector indica la versión
+del archivo elegido. La actualización por reemplazo sigue pendiente.

@@ -221,3 +221,14 @@ Esta confirmación general no acredita todos los escenarios de la matriz física
 los casos no informados y la ruta Gradle con el instalador siguen pendientes.
 Las notas anteriores de «sin commit/push» describen el desarrollo local previo.
 No se autoriza ni ejecuta una release, subida de APK ni Actions por este registro.
+
+
+### Presentación compacta — 2026-10-30
+
+El botón Instalar se sitúa debajo de categoría en la cabecera del mod. El selector
+usa flechas pequeñas junto a los datos del archivo; no hay flechas para un único
+archivo. El pie fijo conserva Volver/Cancelar y aparece el estado/progreso cuando
+corresponde, sin reservar permanentemente una franja para el mensaje de listo.
+Un fallo al crear la operación se conserva en la proyección UI hasta reintentar
+o elegir otro archivo. No cambia la máquina de estados ni la escritura nativa.
+Ver [CATALOG_ACCESSIBILITY.md](CATALOG_ACCESSIBILITY.md) para geometría y pruebas.

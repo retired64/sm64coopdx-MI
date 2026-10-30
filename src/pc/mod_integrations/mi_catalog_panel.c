@@ -121,7 +121,7 @@ static void mi_anchor_workspace(struct DjuiBase* head, UNUSED bool* skip) {
     struct DjuiThreePanel* panel = (struct DjuiThreePanel*)head->parent;
     struct DjuiBase* base = &panel->base;
     float height = fmaxf(0, base->comp.height);
-    float controls = panel->scrollControls && panel->scrollControls->base.visible ? 44 : 0;
+    float controls = panel->scrollControls && panel->scrollControls->base.visible ? 52 : 0;
     float header = fminf(panel->minHeaderSize.value, height);
     float footer = fminf(panel->minFooterSize.value, fmaxf(0, height - header));
     float bodyHeight = fmaxf(0, height - header - footer - controls);
@@ -134,7 +134,22 @@ static void mi_anchor_workspace(struct DjuiBase* head, UNUSED bool* skip) {
     djui_base_set_size(foot, 1, footer);
     panel->scrollMax = fmaxf(0, panel->contentHeight - bodyHeight);
     panel->scrollOffset = djui_panel_scroll_clamp(panel->scrollOffset, panel->scrollMax);
-    if (panel->scrollControls) djui_base_set_location(&panel->scrollControls->base, 0, header + bodyHeight + footer);
+    if (panel->scrollControls) {
+        djui_base_set_location(&panel->scrollControls->base, 0, header + bodyHeight + footer);
+        djui_base_set_size(&panel->scrollControls->base, 1, controls);
+        struct DjuiButton* arrows[] = {panel->scrollUp, panel->scrollDown};
+        for (unsigned i = 0; i < 2; i++) {
+            struct DjuiBase* arrow = &arrows[i]->base;
+            djui_base_set_alignment(arrow, DJUI_HALIGN_LEFT, DJUI_VALIGN_TOP);
+            djui_base_set_location_type(arrow, DJUI_SVT_ABSOLUTE, DJUI_SVT_ABSOLUTE);
+            djui_base_set_size_type(arrow, DJUI_SVT_ABSOLUTE, DJUI_SVT_ABSOLUTE);
+            djui_base_set_location(arrow, fmaxf(0, base->comp.width - 116) + i * 64, 0);
+            djui_base_set_size(arrow, 52, 52);
+            bool available = i == 0 ? panel->scrollOffset > 0 : panel->scrollOffset < panel->scrollMax;
+            djui_base_set_enabled(arrow, available);
+            djui_base_set_visible(arrow, available);
+        }
+    }
 }
 
 /* Keep the native panel stack, theme, clipping and focus navigation. Only the
@@ -184,12 +199,33 @@ static void mi_action_label_fit(struct DjuiBase* base, UNUSED bool* skip) {
 
 static void mi_description_fit(struct DjuiBase* base, bool* skip);
 
-static void mi_field(struct DjuiBase* body, char* format, const char* value) {
+/* Use readable accents for both light and dark workspace themes. */
+static void mi_detail_accent(struct DjuiBase* base, unsigned role) {
+    struct DjuiColor surface = gDjuiThemes[configDjuiTheme]->threePanels.rectColor;
+    bool light = surface.r + surface.g + surface.b > 420;
+    static const unsigned char dark[][3] = {{255,218,128}, {158,215,248}, {170,232,191}};
+    static const unsigned char bright[][3] = {{110,65,0}, {0,65,110}, {15,90,45}};
+    const unsigned char* color = light ? bright[role % 3] : dark[role % 3];
+    djui_base_set_color(base, color[0], color[1], color[2], 255);
+}
+
+static void mi_detail_section(struct DjuiBase* body, char* title) {
+    struct DjuiRect* line = djui_rect_container_create(body, 3);
+    mi_detail_accent(&line->base, 1);
+    struct DjuiText* heading = mi_text(body, title, 44);
+    djui_text_set_font_scale(heading, heading->font->defaultFontScale * 1.2f);
+    heading->base.on_render_pre = mi_description_fit;
+    mi_detail_accent(&heading->base, 1);
+}
+
+static struct DjuiText* mi_field(struct DjuiBase* body, char* format, const char* value, unsigned role) {
     char text[512] = { 0 };
     djui_language_replace(format, text, sizeof(text), '@',
         (char*)(value[0] ? value : mi_catalog_text("UNKNOWN")));
     struct DjuiText* field = mi_text(body, text, 40);
     field->base.on_render_pre = mi_description_fit;
+    mi_detail_accent(&field->base, role);
+    return field;
 }
 
 static void mi_description_fit(struct DjuiBase* base, UNUSED bool* skip) {
@@ -198,10 +234,14 @@ static void mi_description_fit(struct DjuiBase* base, UNUSED bool* skip) {
     djui_base_set_size(base, 1, fmaxf(30, djui_text_count_lines(text, 128) * text->font->charHeight * text->fontScale));
 }
 
+/* Limit paragraphs only; the identity header uses the available workspace. */
 static void mi_reading_width(struct DjuiBase* base, UNUSED bool* skip) {
+    struct DjuiText* text = (struct DjuiText*)base;
+    float width = fmaxf(1, fminf(1000, base->parent->comp.width));
+    djui_base_set_size_type(base, DJUI_SVT_ABSOLUTE, DJUI_SVT_ABSOLUTE);
+    djui_base_set_size(base, width, base->height.value);
     djui_base_compute(base);
-    float inset = fmaxf(0, (base->comp.width - 1000) / 2);
-    djui_base_set_padding(base, 0, inset, 0, inset);
+    djui_base_set_size(base, width, fmaxf(30, djui_text_count_lines(text, 128) * text->font->charHeight * text->fontScale));
 }
 
 struct MiInstallView {
@@ -209,7 +249,14 @@ struct MiInstallView {
     size_t count, selected;
     struct MiInstall* operation;
     struct MiUpdateCandidate update;
-    bool hasUpdate;
+    bool hasUpdate, startFailed;
+    struct DjuiText *title, *author, *version, *category;
+    struct DjuiRect* imageFrame;
+    struct DjuiImage* image;
+    struct DjuiText* imageLabel;
+    struct MiThumbnail* thumbnail;
+    int imageSlot;
+    uint8_t thumbnailPixels[MI_THUMB_BYTES];
     struct DjuiText* fileText;
     struct DjuiText* status;
     struct DjuiButton* install;
@@ -231,6 +278,8 @@ static bool mi_install_active(enum MiInstallState state) {
 static void mi_install_view_destroy(struct DjuiBase* base) {
     struct MiInstallView* view = (struct MiInstallView*)(intptr_t)base->tag;
     mi_install_close(view->operation);
+    mi_thumbnail_close(view->thumbnail);
+    mi_thumbnail_texture_release(view->imageSlot);
     free(view->files);
     free(view);
     free(base);
@@ -239,6 +288,71 @@ static void mi_install_view_destroy(struct DjuiBase* base) {
 static struct MiInstallView* mi_install_view_for(struct DjuiBase* base) {
     while (base && base->destroy != mi_install_view_destroy) base = base->parent;
     return base ? (struct MiInstallView*)(intptr_t)base->tag : NULL;
+}
+
+static void mi_card_place(struct DjuiBase* base, float x, float y, float width, float height);
+
+/* Measure wrapped labels at their actual width before positioning the next one. */
+static float mi_identity_label(struct DjuiText* text, float x, float y, float width) {
+    mi_card_place(&text->base, x, y, fmaxf(1, width), 40);
+    djui_base_compute(&text->base);
+    float height = fmaxf(36, djui_text_count_lines(text, 128) * text->font->charHeight * text->fontScale);
+    djui_base_set_size(&text->base, fmaxf(1, width), height);
+    return height;
+}
+
+static float mi_compact_button_width(struct DjuiButton* button, float available) {
+    struct DjuiText* text = button->text;
+    float oldWidth = text->base.comp.width;
+    float oldScale = text->fontScale;
+    text->base.comp.width = 10000;
+    djui_text_set_font_scale(text, text->font->defaultFontScale * 1.25f);
+    float width = djui_text_find_width(text, 8) + 40;
+    text->base.comp.width = oldWidth;
+    djui_text_set_font_scale(text, oldScale);
+    return fminf(fmaxf(1, available), fmaxf(120, width));
+}
+
+static void mi_file_selector_layout(struct DjuiBase* base, UNUSED bool* skip) {
+    struct MiInstallView* view = mi_install_view_for(base);
+    djui_base_compute(base);
+    bool multiple = view->count > 1;
+    float width = fmaxf(1, base->comp.width);
+    float side = multiple ? 68 : 0;
+    float height = fmaxf(64, mi_identity_label(view->fileText, side, 0, width - 2 * side));
+    mi_card_place(&view->previous->base, 0, 0, 52, 52);
+    mi_card_place(&view->next->base, fmaxf(0, width - 52), 0, 52, 52);
+    djui_base_set_visible(&view->previous->base, multiple);
+    djui_base_set_visible(&view->next->base, multiple);
+    djui_base_set_size(base, 1, height);
+}
+
+static void mi_identity_layout(struct DjuiBase* base, UNUSED bool* skip) {
+    struct MiInstallView* view = mi_install_view_for(base);
+    if (!view) return;
+    djui_base_compute(base);
+    float width = fmaxf(1, base->comp.width);
+    float edge = width >= 500 ? 144 : 96;
+    float left = edge + 20;
+    bool wide = width >= 950;
+    float metaWidth = wide ? width * 0.28f : width;
+    float textWidth = fmaxf(1, (wide ? width - metaWidth - 24 : width) - left);
+    mi_card_place(&view->imageFrame->base, 0, 0, edge, edge);
+    float titleHeight = mi_identity_label(view->title, left, 0, textWidth);
+    float authorHeight = mi_identity_label(view->author, left, titleHeight + 8, textWidth);
+    float topHeight = fmaxf(edge, titleHeight + 8 + authorHeight);
+    float metaX = wide ? width - metaWidth : 0;
+    float metaY = wide ? 0 : topHeight + 16;
+    float versionHeight = mi_identity_label(view->version, metaX, metaY, metaWidth);
+    float categoryHeight = mi_identity_label(view->category, metaX, metaY + versionHeight + 8, metaWidth);
+    float installY = metaY + versionHeight + 8 + categoryHeight + 12;
+    mi_card_place(&view->install->base, metaX, installY,
+        mi_compact_button_width(view->install, metaWidth), 56);
+    struct DjuiColor buttonSurface = view->install->rect->base.color;
+    bool lightButton = buttonSurface.r + buttonSurface.g + buttonSurface.b > 420;
+    djui_base_set_color(&view->install->text->base, lightButton ? 15 : 170,
+        lightButton ? 90 : 232, lightButton ? 45 : 191, 255);
+    djui_base_set_size(base, 1, fmaxf(topHeight, installY + 56) + 16);
 }
 
 static const char* mi_install_error_text(enum MiInstallError error) {
@@ -259,6 +373,13 @@ static const char* mi_install_error_text(enum MiInstallError error) {
 
 static void mi_install_view_update(struct DjuiBase* base, UNUSED bool* skip) {
     struct MiInstallView* view = mi_install_view_for(base);
+    if (view->thumbnail && mi_thumbnail_take(view->thumbnail, view->thumbnailPixels, sizeof(view->thumbnailPixels)) &&
+        mi_thumbnail_texture_publish(view->imageSlot, view->thumbnailPixels)) {
+        djui_base_set_visible(&view->image->base, true);
+        djui_base_set_visible(&view->imageLabel->base, false);
+    }
+    if (view->thumbnail && mi_thumbnail_state(view->thumbnail) == MI_THUMB_FAILED)
+        djui_text_set_text(view->imageLabel, mi_catalog_text("THUMB_PLACEHOLDER"));
     struct MiInstallInfo info = {0};
     bool hasOperation = mi_install_poll(view->operation, &info);
     bool active = hasOperation && mi_install_active(info.state);
@@ -267,6 +388,7 @@ static void mi_install_view_update(struct DjuiBase* base, UNUSED bool* skip) {
         !strcmp(view->files[view->selected].versionId, view->update.file.versionId) &&
         !strcmp(view->files[view->selected].fileId, view->update.file.fileId);
     const char* message = mi_catalog_text(newer ? "UPDATE_PREVIEW" : (supported ? "INSTALL_READY" : "INSTALL_UNSUPPORTED"));
+    if (view->startFailed) message = mi_catalog_text("INSTALL_STORAGE");
     if (hasOperation) {
         switch (info.state) {
             case MI_INSTALL_PENDING: message = mi_catalog_text("INSTALL_WAIT"); break;
@@ -295,6 +417,7 @@ static void mi_install_view_update(struct DjuiBase* base, UNUSED bool* skip) {
         snprintf(status + used, sizeof(status) - used, "\nmods/%s", info.destination);
     } else if (active) snprintf(status + used, sizeof(status) - used, "\n%s", filename);
     djui_text_set_text(view->status, status);
+    mi_detail_accent(&view->status->base, hasOperation && info.state == MI_INSTALL_COMPLETE ? 2 : 1);
     djui_text_set_text(view->install->text, mi_catalog_text(newer ? "UPDATE_AVAILABLE" : "INSTALL"));
     djui_base_set_enabled(&view->install->base, !active && supported && !newer && !(hasOperation && info.state == MI_INSTALL_COMPLETE));
     djui_base_set_enabled(&view->previous->base, !active && view->selected > 0);
@@ -303,6 +426,21 @@ static void mi_install_view_update(struct DjuiBase* base, UNUSED bool* skip) {
     djui_base_set_enabled(&view->back->base, !active || (info.state != MI_INSTALL_COMMITTING && info.state != MI_INSTALL_CANCELLING));
     djui_base_set_visible(&view->bar->base, active && info.progress >= 0);
     djui_base_set_visible(&view->pulse->base, active && info.progress < 0);
+    /* Keep normal browsing compact; reserve feedback space only when useful. */
+    bool feedback = hasOperation || view->startFailed || newer || !supported;
+    struct DjuiThreePanel* panel = (struct DjuiThreePanel*)base;
+    djui_base_compute(base);
+    float width = fmaxf(1, base->comp.width - 24);
+    float backWidth = mi_compact_button_width(view->back, fminf(260, width));
+    mi_card_place(&view->back->base, 0, 4, backWidth, 56);
+    bool narrow = width < 650;
+    float footerHeight = feedback ? (narrow ? 228 : 152) : 64;
+    panel->minFooterSize.value = footerHeight;
+    mi_card_place(&view->status->base, narrow ? 0 : backWidth + 20,
+        narrow ? 68 : 4, narrow ? width : fmaxf(1, width - backWidth - 20), 112);
+    djui_base_set_visible(&view->status->base, feedback);
+    mi_card_place(&view->bar->base, 0, footerHeight - 24, width, 20);
+    mi_card_place(&view->pulse->base, 0, footerHeight - 24, width, 20);
     if (hasOperation && info.state != view->phase) { view->bar->smoothValue = 0; view->phase = info.state; }
     view->progress = fminf(1, fmaxf(0, info.progress));
     struct timespec now;
@@ -325,7 +463,7 @@ static void mi_install_choose(struct DjuiBase* caller) {
     if (!view || !view->count) return;
     struct MiInstallInfo info;
     if (mi_install_poll(view->operation, &info) && mi_install_active(info.state)) return;
-    mi_install_close(view->operation); view->operation = NULL;
+    mi_install_close(view->operation); view->operation = NULL; view->startFailed = false;
     if (caller == &view->previous->base && view->selected) view->selected--;
     if (caller == &view->next->base && view->selected + 1 < view->count) view->selected++;
     const struct MiCatalogFile* file = &view->files[view->selected];
@@ -341,7 +479,7 @@ static void mi_install_begin(struct DjuiBase* caller) {
     if (!view || !view->count || (mi_install_poll(view->operation, &info) && mi_install_active(info.state))) return;
     mi_install_close(view->operation);
     view->operation = mi_install_start(fs_get_write_path(""), &view->files[view->selected]);
-    if (!view->operation) djui_text_set_text(view->status, mi_catalog_text("INSTALL_STORAGE"));
+    view->startFailed = view->operation == NULL;
 }
 
 static void mi_details(struct DjuiBase* caller) {
@@ -352,19 +490,11 @@ static void mi_details(struct DjuiBase* caller) {
     if (view->installRevision != mi_install_revision()) {
         mi_updates_invalidate(view); view->installRevision = mi_install_revision();
     }
-    struct DjuiThreePanel* panel = mi_workspace(mi_catalog_text("DETAILS"), 56, 200);
+    struct DjuiThreePanel* panel = mi_workspace(mi_catalog_text("DETAILS"), 56, 64);
     struct DjuiBase* body = djui_three_panel_get_body(panel);
-    body->on_render_pre = mi_reading_width;
-    struct DjuiText* title = mi_text(body, entry->title, 72);
-    djui_text_set_font_scale(title, title->font->defaultFontScale * 1.4f);
-    title->base.on_render_pre = mi_description_fit;
-    mi_field(body, mi_catalog_text("AUTHOR"), entry->author);
-    mi_field(body, mi_catalog_text("VERSION"), entry->version);
-    mi_field(body, mi_catalog_text("CATEGORY"), entry->category);
-    struct DjuiText* description = mi_text(body, entry->description[0] ? entry->description : mi_catalog_text("NO_DESCRIPTION"), 160);
-    description->base.on_render_pre = mi_description_fit;
     struct MiInstallView* detail = calloc(1, sizeof(*detail));
     if (!detail) { djui_base_destroy(&panel->base); return; }
+    detail->imageSlot = -1;
     detail->count = mi_catalog_file_count(view->catalog, (size_t)caller->tag);
     detail->files = calloc(detail->count, sizeof(*detail->files));
     if (detail->count && !detail->files) { free(detail); djui_base_destroy(&panel->base); return; }
@@ -383,27 +513,54 @@ static void mi_details(struct DjuiBase* caller) {
     panel->base.destroy = mi_install_view_destroy;
     panel->base.on_render_pre = mi_install_view_update;
     panel->on_back = mi_install_view_back;
-    detail->fileText = mi_text(body, "", 80);
-    detail->fileText->base.on_render_pre = mi_description_fit;
+    struct DjuiRect* identity = djui_rect_container_create(body, 180);
+    identity->base.on_render_pre = mi_identity_layout;
+    detail->title = mi_text(&identity->base, entry->title, 72);
+    djui_text_set_font_scale(detail->title, detail->title->font->defaultFontScale * 1.4f);
+    mi_detail_accent(&detail->title->base, 0);
+    detail->author = mi_field(&identity->base, mi_catalog_text("AUTHOR"), entry->author, 1);
+    detail->version = mi_field(&identity->base, mi_catalog_text("VERSION"), entry->version, 0);
+    detail->category = mi_field(&identity->base, mi_catalog_text("CATEGORY"), entry->category, 2);
+    detail->author->base.on_render_pre = NULL;
+    detail->version->base.on_render_pre = NULL;
+    detail->category->base.on_render_pre = NULL;
+    detail->install = djui_button_create(&identity->base, mi_catalog_text("INSTALL"), DJUI_BUTTON_STYLE_NORMAL, mi_install_begin);
+    detail->install->text->base.on_render_pre = mi_action_label_fit;
+    detail->imageFrame = djui_rect_create(&identity->base);
+    djui_base_set_color(&detail->imageFrame->base, 25, 32, 42, 255);
+    djui_base_set_border_width(&detail->imageFrame->base, 2);
+    djui_base_set_border_color(&detail->imageFrame->base, 128, 144, 160, 255);
+    djui_base_set_padding(&detail->imageFrame->base, 4, 4, 4, 4);
+    detail->imageLabel = mi_text(&detail->imageFrame->base, mi_catalog_text("THUMB_PLACEHOLDER"), 40);
+    djui_base_set_size_type(&detail->imageLabel->base, DJUI_SVT_RELATIVE, DJUI_SVT_RELATIVE);
+    djui_base_set_size(&detail->imageLabel->base, 1, 1);
+    djui_text_set_alignment(detail->imageLabel, DJUI_HALIGN_CENTER, DJUI_VALIGN_CENTER);
+    djui_base_set_color(&detail->imageLabel->base, 195, 205, 220, 255);
+    detail->imageSlot = mi_thumbnail_texture_acquire();
+    detail->image = djui_image_create(&detail->imageFrame->base,
+        (const Texture*)mi_thumbnail_texture_pixels(detail->imageSlot), MI_THUMB_EDGE, MI_THUMB_EDGE, G_IM_FMT_RGBA, G_IM_SIZ_32b);
+    djui_base_set_size_type(&detail->image->base, DJUI_SVT_RELATIVE, DJUI_SVT_RELATIVE);
+    djui_base_set_size(&detail->image->base, 1, 1);
+    djui_base_set_visible(&detail->image->base, false);
+    if (entry->imageUrl[0] && detail->imageSlot >= 0)
+        detail->thumbnail = mi_thumbnail_start(fs_writepath, entry->imageUrl);
+
+    mi_detail_section(body, mi_catalog_text("DETAIL_FILES"));
     struct DjuiRect* choices = djui_rect_container_create(body, 64);
-    detail->previous = djui_button_left_create(&choices->base, mi_catalog_text("PREVIOUS_FILE"), DJUI_BUTTON_STYLE_NORMAL, mi_install_choose);
-    detail->next = djui_button_right_create(&choices->base, mi_catalog_text("NEXT_FILE"), DJUI_BUTTON_STYLE_NORMAL, mi_install_choose);
-    mi_place(&detail->previous->base, 0, 0, 0.485f, 64);
-    /* mi_place uses offsets from the left; right_create instead interprets x
-     * as an inset from the right and would overlap the previous button. */
-    djui_base_set_alignment(&detail->next->base, DJUI_HALIGN_LEFT, DJUI_VALIGN_TOP);
-    mi_place(&detail->next->base, 0.515f, 0, 0.485f, 64);
+    choices->base.on_render_pre = mi_file_selector_layout;
+    detail->previous = djui_button_create(&choices->base, "<", DJUI_BUTTON_STYLE_NORMAL, mi_install_choose);
+    detail->fileText = mi_text(&choices->base, "", 64);
+    mi_detail_accent(&detail->fileText->base, 0);
+    detail->next = djui_button_create(&choices->base, ">", DJUI_BUTTON_STYLE_NORMAL, mi_install_choose);
     detail->previous->text->base.on_render_pre = mi_action_label_fit;
     detail->next->text->base.on_render_pre = mi_action_label_fit;
+    mi_detail_section(body, mi_catalog_text("DETAIL_ABOUT"));
+    struct DjuiText* description = mi_text(body, entry->description[0] ? entry->description : mi_catalog_text("NO_DESCRIPTION"), 160);
+    description->base.on_render_pre = mi_reading_width;
     struct DjuiBase* footer = djui_three_panel_get_footer(panel);
-    struct DjuiButton* install = djui_button_right_create(footer, mi_catalog_text("INSTALL"), DJUI_BUTTON_STYLE_NORMAL, mi_install_begin);
-    djui_base_set_alignment(&install->base, DJUI_HALIGN_LEFT, DJUI_VALIGN_TOP);
-    mi_place(&install->base, 0.515f, 0, 0.485f, 64);
-    install->text->base.on_render_pre = mi_action_label_fit;
-    struct DjuiButton* back = djui_button_left_create(footer, DLANG(MENU, BACK), DJUI_BUTTON_STYLE_BACK, djui_panel_menu_back);
-    mi_place(&back->base, 0, 0, 0.485f, 64);
+    struct DjuiButton* back = djui_button_create(footer, DLANG(MENU, BACK), DJUI_BUTTON_STYLE_BACK, djui_panel_menu_back);
     back->text->base.on_render_pre = mi_action_label_fit;
-    detail->install = install; detail->back = back;
+    detail->back = back;
     /* Keep operation/error/result visible even when the description is scrolled. */
     detail->status = mi_text(footer, "", 88);
     mi_place(&detail->status->base, 0, 104, 1, 88);
@@ -412,7 +569,7 @@ static void mi_details(struct DjuiBase* caller) {
     detail->pulse = djui_progress_bar_create(footer, &detail->animation, 0, 1, true);
     mi_place(&detail->bar->base, 0, 76, 1, 20);
     mi_place(&detail->pulse->base, 0, 76, 1, 20);
-    mi_install_choose(&install->base);
+    mi_install_choose(&detail->install->base);
     mi_install_view_update(&panel->base, NULL);
     /* DJUI copies text. No borrowed DTO or catalog pointers in the detail panel. */
     if (!djui_panel_add(caller, panel, &back->base)) djui_base_destroy(&panel->base);
@@ -505,23 +662,42 @@ static void mi_view_update(struct MiCatalogView* view) {
         snprintf(status, sizeof(status), "%s", mi_catalog_text("EMPTY"));
     else if (ready && !count && mi_catalog_count(view->catalog))
         snprintf(status, sizeof(status), "%s", mi_catalog_text("NO_RESULTS"));
-    if (view->updatesWanted || (view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING)) {
+    if (!view->fetch.running && (view->updatesWanted || (view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING))) {
         snprintf(status, sizeof(status), "%s", mi_catalog_text("CHECKING_UPDATES"));
     } else if (view->updates && view->updatesInfo.state == MI_UPDATES_DONE) {
-        char counts[128];
-        snprintf(counts, sizeof(counts), "%zu / %zu / %zu", view->updatesInfo.available,
-            view->updatesInfo.uncertain, view->updatesInfo.missing);
-        djui_language_replace(mi_catalog_text("UPDATES_SUMMARY"), status, sizeof(status), '@', counts);
-        if (view->fetch.fromCache || view->fetch.error != MI_FETCH_OK) {
-            size_t used = strlen(status); snprintf(status + used, sizeof(status) - used, " %s", mi_catalog_text("USING_SAVED"));
+        char summary[512], number[32];
+        const struct MiUpdatesInfo* result = &view->updatesInfo;
+        snprintf(number, sizeof(number), "%zu", result->available);
+        const char* key = result->available ? "NEWS_FOUND" :
+            (result->uncertain || result->missing ? "NEWS_INCOMPLETE" :
+            (result->checked ? "NEWS_NONE" : "NEWS_NO_INSTALLS"));
+        djui_language_replace(mi_catalog_text(key), summary, sizeof(summary), '@', number);
+        if (result->uncertain || result->missing) {
+            char details[160];
+            snprintf(number, sizeof(number), "%zu", result->uncertain + result->missing);
+            djui_language_replace(mi_catalog_text("NEWS_UNVERIFIED"), details, sizeof(details), '@', number);
+            size_t used = strlen(summary);
+            snprintf(summary + used, sizeof(summary) - used, " %s", details);
+        }
+        if (view->fetch.error == MI_FETCH_OK) {
+            snprintf(status, sizeof(status), "%s%s%s", summary,
+                view->fetch.fromCache ? " " : "", view->fetch.fromCache ? mi_catalog_text("USING_SAVED") : "");
+        } else {
+            /* Preserve the download/storage error while reporting a saved-copy comparison. */
+            size_t used = strlen(status);
+            snprintf(status + used, sizeof(status) - used, " %s", summary);
         }
     } else if (view->updates && view->updatesInfo.state == MI_UPDATES_FAILED) {
         snprintf(status, sizeof(status), "%s", mi_catalog_text(view->updatesInfo.error == MI_UPDATES_BUSY ? "UPDATES_BUSY" : "UPDATES_ERROR"));
     }
-    djui_text_set_text(view->checkUpdates->text, mi_catalog_text(view->updatesOnly ? "SHOW_ALL_MODS" : "CHECK_UPDATES"));
+    char filter[128], number[32];
+    snprintf(number, sizeof(number), "%zu", view->updatesInfo.available);
+    djui_language_replace(mi_catalog_text("NEWS_FILTER"), filter, sizeof(filter), '@', number);
+    djui_text_set_text(view->checkUpdates->text, view->updatesOnly ? mi_catalog_text("SHOW_ALL_MODS") : filter);
     djui_base_set_enabled(&view->checkUpdates->base, !view->updatesWanted && !view->fetch.running &&
-        !(view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING));
+        view->updates && view->updatesInfo.state == MI_UPDATES_DONE && view->updatesInfo.available > 0);
     djui_text_set_text(view->status, status);
+
     char checked[128] = { 0 };
     if (ready && view->fetch.savedAt > 0) {
         time_t timestamp = (time_t)view->fetch.savedAt;
@@ -556,7 +732,7 @@ static void mi_view_update(struct MiCatalogView* view) {
     djui_text_set_text(view->pageText, page);
     djui_base_set_enabled(&view->previous->base, ready && view->page > 0);
     djui_base_set_enabled(&view->next->base, ready && view->page + 1 < pages);
-    djui_text_set_text(view->retry->text, mi_catalog_text(view->fetch.error == MI_FETCH_OK ? "REFRESH" : "RETRY"));
+    djui_text_set_text(view->retry->text, mi_catalog_text(view->fetch.error == MI_FETCH_OK ? "NEWS_REFRESH" : "RETRY"));
     djui_base_set_enabled(&view->retry->base, !view->fetch.running && !view->updatesWanted &&
         !(view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING));
 }
@@ -635,26 +811,30 @@ static void mi_poll_request(struct DjuiBase* base, UNUSED bool* skip) {
         result.missing != view->updatesInfo.missing || result.uncertain != view->updatesInfo.uncertain ||
         result.available != view->updatesInfo.available)) {
         view->updatesInfo = result; changed = true;
-        if (result.state == MI_UPDATES_DONE) { view->updatesOnly = result.available > 0; view->page = 0; }
+        if (result.state == MI_UPDATES_DONE) { view->page = 0; }
     }
     if (changed) mi_view_update(view);
     mi_thumbnail_poll_all(view);
 }
 
+/* This is a local view filter: it never starts a network request or worker. */
 static void mi_check_updates(struct DjuiBase* caller) {
     struct MiCatalogView* view = mi_view_for(caller);
-    if (!view || view->fetch.running || view->updatesWanted ||
-        (view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING)) return;
-    if (view->updatesOnly) { view->updatesOnly = false; view->page = 0; mi_view_update(view); return; }
-    mi_begin_request(view, true); view->updatesWanted = true;
-    view->installRevision = mi_install_revision();
+    if (!view || view->fetch.running || view->updatesWanted || !view->updates ||
+        view->updatesInfo.state != MI_UPDATES_DONE || !view->updatesInfo.available) return;
+    view->updatesOnly = !view->updatesOnly;
+    view->page = 0;
     mi_view_update(view);
 }
 
+/* One explicit action refreshes the catalog, then compares installed receipts. */
 static void mi_retry(struct DjuiBase* caller) {
     struct MiCatalogView* view = mi_view_for(caller);
-    if (!view || view->fetch.running) return;
+    if (!view || view->fetch.running || view->updatesWanted ||
+        (view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING)) return;
     mi_begin_request(view, true);
+    view->updatesWanted = true;
+    view->installRevision = mi_install_revision();
     mi_view_update(view);
 }
 
@@ -680,9 +860,9 @@ struct DjuiPanel* mi_catalog_panel_create(struct DjuiBase* caller) {
     view->search = search->inputbox;
     view->searchbox = search;
     djui_text_set_text(search->text, mi_catalog_text("SEARCH"));
-    view->retry = djui_button_create(header, mi_catalog_text("REFRESH"), DJUI_BUTTON_STYLE_NORMAL, mi_retry);
+    view->retry = djui_button_create(header, mi_catalog_text("NEWS_REFRESH"), DJUI_BUTTON_STYLE_NORMAL, mi_retry);
     mi_place(&view->retry->base, 0.48f, 48, 0.22f, 52);
-    view->checkUpdates = djui_button_create(header, mi_catalog_text("CHECK_UPDATES"), DJUI_BUTTON_STYLE_NORMAL, mi_check_updates);
+    view->checkUpdates = djui_button_create(header, mi_catalog_text("NEWS_FILTER"), DJUI_BUTTON_STYLE_NORMAL, mi_check_updates);
     mi_place(&view->checkUpdates->base, 0.72f, 48, 0.28f, 52);
     view->checkUpdates->text->base.on_render_pre = mi_action_label_fit;
     view->status = mi_text(header, mi_catalog_text("LOADING"), 48);

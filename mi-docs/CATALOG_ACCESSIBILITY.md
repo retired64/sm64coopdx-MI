@@ -75,3 +75,101 @@ resultó muy accesible en su teléfono. Se registra aceptación general del dise
 de tarjetas y lectura. No se presume cobertura individual de toda la matriz
 de mando, teclado, idiomas, temas y estados de red. Las notas anteriores de
 prueba física pendiente reflejan el estado previo a esta confirmación.
+
+
+### Detalles organizados — 2026-10-30
+
+El detalle presenta título dorado, autor azul y categoría verde, con variantes
+oscuras para superficies claras. El texto sigue identificando cada dato: el color
+no es el único indicador. Las secciones «Elige una versión / archivo» y «Acerca
+del mod» llevan separadores y encabezados azules. El selector precede a la
+descripción para que una descripción extensa no oculte la elección de versión.
+Se conservan ancho de lectura máximo de 1000 unidades lógicas, ajuste de altura
+al envolver, escala DJUI, scroll y pie fijo con instalar/volver/progreso/estado.
+No cambia el instalador, la consulta de actualizaciones ni la propiedad de datos.
+Cambios en mi_catalog_panel.c, tres INIs y strings generados; sin cambios upstream.
+Validación física pendiente: temas claros/oscuros, títulos largos, escalas grandes,
+selección con mando y progreso real durante instalación. No se presume aceptación
+por confirmaciones anteriores sobre otras pantallas.
+
+
+### Consulta unificada de novedades — 2026-10-30
+
+Esta nota supera el flujo anterior con dos acciones de descarga. «Buscar novedades»
+es la única acción manual de red: fuerza una consulta del catálogo y, al terminar,
+compara los recibos MI contra el snapshot válido. El botón queda deshabilitado
+durante ambas fases. Abrir el catálogo conserva su política de caché habitual;
+no implica reemplazar mods ni iniciar una actualización automática.
+
+«Actualizaciones (N)» es únicamente un filtro local, habilitado cuando hay
+candidatos comprobados. Alterna con «Ver todos los mods» sin red ni nueva lectura
+de recibos. Conserva la búsqueda y vuelve a la primera página; terminar la consulta
+no activa el filtro automáticamente. Catálogo nuevo o revisión de instalación
+invalida candidatos y filtro. No existe otra caché ni otro trabajador.
+
+El resumen distingue candidatos, ausencia de recibos MI, ausencia de novedades
+y comprobaciones incompletas. Una ruta ausente se comunica como instalación sin
+verificar, nunca como una eliminación realizada por MI. Los errores de red o de
+guardado conservan su mensaje aunque se pueda comparar la copia disponible.
+La vista previa de una actualización sigue sin habilitar el reemplazo de archivos.
+
+Prueba física pendiente: tocar filtro repetidamente sin nueva consulta, búsqueda
+sin coincidencias, cero recibos, candidatas, rutas ausentes, fallo de red con copia
+guardada, cierre durante ambas fases y escala DJUI grande.
+
+
+### Cabecera horizontal de detalles — 2026-10-30
+
+Se revisaron las capturas de 16:11 y 16:12: el bloque vertical estrecho desplazaba
+el selector y ocultaba información inicial. La identidad ahora ocupa el ancho
+del cuerpo: miniatura a la izquierda, título y autor a su lado y versión/categoría
+en una columna derecha cuando hay al menos 950 unidades lógicas disponibles.
+Con menos ancho, versión y categoría pasan debajo del bloque imagen/título/autor.
+La imagen mide 144 unidades, o 96 en anchos menores de 500. No se reduce el texto
+para mantener columnas; la altura se calcula midiendo cada etiqueta envuelta.
+Solo los párrafos mantienen el máximo de lectura de 1000 unidades. Selector,
+separadores y pie fijo mantienen sus controles nativos y desplazamiento.
+
+El detalle copia metadatos en widgets y conserva su propia solicitud de imagen
+y lease del pool de texturas. El trabajador no conoce DJUI: el hilo principal
+consume RGBA y publica en el slot estable. Se reutilizan descarga/caché de
+miniaturas, sin otro formato persistido ni copia del catálogo. El cierre cancela
+la solicitud y libera el lease; el pool conserva sus direcciones de memoria.
+Fallo de imagen o agotamiento de slots muestra MOD sin bloquear la instalación.
+
+Pendiente en teléfono: escala grande, títulos/autores/categorías largos, temas,
+scroll completo, volver durante carga de imagen y reapertura repetida del detalle.
+La versión de cabecera corresponde al catálogo; el selector indica la versión
+del archivo elegido. La actualización por reemplazo sigue pendiente.
+
+
+### Controles compactos del detalle — 2026-10-30
+
+Instalar pasa a la cabecera, debajo de categoría, con ancho medido por la fuente
+y traducción más márgenes. Conserva el estilo nativo de foco/hover y acento verde
+adaptado a la superficie. La etiqueta de nueva versión continúa deshabilitada:
+no se implementó reemplazo. Al desplazar la cabecera, el botón puede salir del
+viewport; el pie conserva Volver/Cancelar y el estado de la operación.
+
+El selector usa flechas ASCII < y > de 52 unidades con versión, posición y nombre
+de archivo entre ellas. Las flechas desaparecen cuando solo hay un archivo.
+La altura se mide al envolver el nombre. Los controles verticales nativos se
+recolocan únicamente en workspaces MI: dos botones de 52 unidades separados,
+agrupados a la derecha del pie, visibles solo en direcciones disponibles. No se
+modifica djui_three_panel ni los otros menús del juego. No se incorporó WebP ni
+un decodificador nuevo; las futuras texturas pueden sustituir el dibujo.
+
+El pie normal mide 64 unidades lógicas. Su espacio de estado aparece ante una
+operación, un error previo al inicio, archivo no admitido o aviso de actualización.
+El mensaje listo para instalar deja de ocupar permanentemente espacio. En anchos
+menores de 650, estado y Volver se distribuyen en filas; en anchos mayores quedan
+uno al lado del otro. El progreso real permanece fijo mientras la cabecera se
+desplaza; Cancelar se bloquea durante confirmación/finalización, como antes.
+
+Se conserva el fallo de creación de operación en un flag de presentación hasta
+reintentar o cambiar archivo: ya no desaparece en el siguiente frame. La operación
+nativa sigue siendo la autoridad para estados, éxito y cancelación.
+
+Prueba física pendiente: primer/último archivo, mod con un solo archivo, nombres
+largos, foco con mando y direcciones ocultas, escala grande, hover/táctil, iniciar
+desde cabecera y bajar/subir durante la instalación, cancelación y resultado.
