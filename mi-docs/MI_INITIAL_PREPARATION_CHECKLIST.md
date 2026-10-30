@@ -155,7 +155,7 @@ No dar por validado el juego solo porque Gradle genera un APK.
 
 ## 8. Preparar datos y casos de prueba del MVP
 
-- [x] tests/mi/catalog_sample.json: 8 entradas sintéticas schema 2 con IDs estables; validada por el scraper y embebida para el prototipo.
+- [x] tests/mi/catalog_sample.json: 8 entradas sintéticas schema 2 con IDs estables; validada contra el contrato JSON y embebida para el prototipo.
 - [ ] Seleccionar Lua suelto y ZIP de prueba con distribución permitida o generarlos como fixtures propios.
 - [ ] Preparar dos versiones de un mismo mod para probar actualización individual.
 - [ ] Preparar casos de red fallida, descarga incompleta, cancelación, extracción fallida y colisión con archivos ajenos.
@@ -281,7 +281,7 @@ siguen pendientes; no se declaran requisitos ya completados por tener este proto
 - [x] Estado por panel y liberación al salir; sin tareas asíncronas ni nueva persistencia.
 - [x] Textos EN/ES/PT y fallback inglés nativo para otros idiomas.
 - [x] Pruebas C++ de contrato, identidad, búsqueda y límites de texto correctas.
-- [x] Muestra aceptada por el validador del scraper.
+- [x] Muestra validada contra el contrato del catálogo.
 - [x] APK Termux compilado; firma, alineación y contenido verificados.
 - [ ] Prueba física de la nueva pantalla, búsqueda desde página 2, detalles y retorno.
 - [ ] Confirmar que paginación, tooltip y selección del menú original permanecen operativos.
@@ -402,7 +402,7 @@ SHA-256: 4e221f79ca1d537d25bfcc8f779624d09ae337a1c0d18c87ac4487ed0a2a4253.
 - [ ] Medir con el mismo catálogo: JSON, transferencia comprimida, publicación
   reducida para el juego y SQLite; bytes transferidos/almacenados, apertura y RAM.
 - [ ] Definir formato/esquema con base en esas mediciones y consultas Android.
-- [ ] Decidir si el scraper conserva JSON canónico y genera un artefacto adicional.
+- [ ] Medir formatos alternativos de consumo preservando el contrato JSON.
 - [ ] Preservar identidades, idiomas y datos de instalación/asociación/actualización.
 - [ ] Versionar publicación y validar tamaño/hash, estructura e integridad antes
   de adoptar el nuevo catálogo; mantener HTTPS y carga fuera del hilo UI.
@@ -571,3 +571,36 @@ Esta confirmación general no acredita todos los escenarios de la matriz física
 los casos no informados y la ruta Gradle con el instalador siguen pendientes.
 Las notas anteriores de «sin commit/push» describen el desarrollo local previo.
 No se autoriza ni ejecuta una release, subida de APK ni Actions por este registro.
+
+
+## Consulta de actualizaciones y UI con miniaturas — 2026-10-30
+
+- [x] Consultar publicaciones posteriores usando únicamente JSON público y recibos.
+- [x] Comparación conservadora de fechas/roles, borrados y conflictos internos.
+- [x] Resultados en catálogo existente; detalle instalado -> disponible, sin reemplazo.
+- [x] Miniaturas image_url/icon_url, título/autor/categoría con colores por tema.
+- [x] Dos workers de imágenes, caché opcional limitada y slots de píxeles estables.
+- [x] Suites test_updates.py y test_catalog.py correctas.
+- [x] test_thumbnails.py --bundled-curl --live correcto: icono real HTTPS y pruebas
+  sintéticas de caché/errores/cola/texturas; todo en temporales, sin mods reales.
+- [x] test_requests.py --bundled-curl --live correcto con 1307 mods publicados.
+- [x] test_install.py --bundled-curl correcto; se conserva instalación/recuperación.
+- [x] Build Termux incremental, firma, zipalign, CRC y libmain empaquetada correctos.
+- [x] Generados, diff --check, enlaces y frontera pública documental revisados.
+- [ ] Prueba física de diseño, miniaturas al paginar/filtrar/reabrir, temas/escala,
+  foco/mando, resultados de consulta y consulta con red/copia guardada.
+- [ ] Medición GPU y contraste; no se infieren de tests de CPU ni del build.
+- [ ] Gradle/Actions con esta implementación: no ejecutados remotamente.
+- [ ] Reemplazo individual, migración/limpieza de recibos y Actualizar todos.
+
+Artefacto: /sdcard/Download/sm64coopdx-MI-explore-local.apk; 123881785 bytes.
+SHA-256: 0cfa681d16de1a11390ea7511f09140f366cc938d43d3f6b88743d7d43cfed5d.
+libmain SHA-256: d9e27fcc0245888292720cbcd8da918b36487a16f5d9104324bcaf538d656903.
+Logs locales: /data/data/com.termux/files/usr/tmp/mi-preview-build.log.
+El build completo de los headers afectados mostró avisos heredados nonnull en
+pc_main y vendor; build incremental final sin errores, con recetas Make repetidas
+heredadas. Suite miniz conserva aviso de IO de archivos grandes. No se cambió
+la toolchain. Solo se añadieron suites al workflow público manual; no se ejecutó.
+Sin commit ni push. La limpieza documental local de fronteras públicas se conserva;
+el historial remoto anterior no fue reescrito. Ver [CATALOG_UPDATES.md](CATALOG_UPDATES.md)
+y [CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md).

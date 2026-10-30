@@ -1,5 +1,12 @@
 # Catálogo remoto MI — etapa 2
 
+> Ampliación local — 2026-10-30: tarjetas con miniaturas y consulta de versiones
+> posteriores, sin reemplazo de archivos. Diseño y ciclo de vida vigentes:
+> [CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md),
+> [CATALOG_UPDATES.md](CATALOG_UPDATES.md). Las descripciones de tarjetas sin
+> imágenes de este documento corresponden a la etapa anterior.
+
+
 Implementado el 2026-10-29 sobre mi-main, basado en ManIsCat2/android.
 
 ## Comportamiento
@@ -47,7 +54,7 @@ Un fallo de almacenamiento permite mostrar el catálogo remoto válido con aviso
 
 ## Verificación de sincronización de estado
 
-El scraper publica la fuente; el servicio nativo lee red/caché y escribe las
+El catálogo JSON publicado es la fuente externa; el servicio nativo lee red/caché y escribe las
 copias válidas; DJUI recibe snapshots inmutables mediante polling con mutex.
 La fuente es el catálogo remoto validado, con la última copia válida como respaldo.
 La caché se renueva por antigüedad o petición explícita; respuestas inválidas

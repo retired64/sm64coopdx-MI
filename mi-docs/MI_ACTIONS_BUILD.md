@@ -166,3 +166,11 @@ no se afirma verificación local independiente ni instalación física del APK n
 Evidencia, corrección y pendientes: [registro CI](ci/2026-10-30-first-success.md).
 Los avisos heredados sobre recetas duplicadas del Makefile permanecen y no fueron
 la causa del fallo de selección de módulo.
+
+
+### Nuevas suites de consulta e imágenes
+
+El job de contratos incluye test_updates.py y test_thumbnails.py: fixtures y HTTP
+locales, sin ROM ni catálogos privados. Se mantiene el workflow manual de build MI;
+no se ejecutó Actions por estos cambios. La opción --live es una validación local
+separada y no es requisito de red de esas suites en CI.

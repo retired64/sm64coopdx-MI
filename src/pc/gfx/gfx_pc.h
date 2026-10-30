@@ -36,6 +36,10 @@ extern bool gShaderFlagsEnabled;
 extern "C" {
 #endif
 
+/* Main-thread dynamic DJUI textures: refresh only this address on next import.
+ * Does not flush unrelated textures or allocate a new GPU texture per update. */
+bool gfx_texture_mark_dirty(const void* address);
+
 void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi, const char *window_title);
 struct GfxRenderingAPI *gfx_get_current_rendering_api(void);
 void gfx_start_frame(void);

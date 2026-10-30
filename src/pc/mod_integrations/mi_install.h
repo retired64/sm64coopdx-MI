@@ -22,6 +22,9 @@ struct MiInstallInfo {
 };
 /* Copies identity/source. One process-wide installation, no worker DJUI access.
  * userRoot is a copied fs_writepath; tests must use isolated temporary roots. */
+/* Changes at accepted install start/end; invalidates read-only update results. */
+uint64_t mi_install_revision(void);
+bool mi_install_is_busy(void);
 struct MiInstall* mi_install_start(const char* userRoot, const struct MiCatalogFile* source);
 bool mi_install_poll(struct MiInstall* operation, struct MiInstallInfo* info);
 void mi_install_cancel(struct MiInstall* operation);

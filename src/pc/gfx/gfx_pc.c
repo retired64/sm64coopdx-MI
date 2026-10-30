@@ -325,7 +325,25 @@ void gfx_texture_cache_clear(void) {
     memset(&gfx_texture_cache, 0, sizeof(gfx_texture_cache));
 }
 
+/* Bounded opt-in used by the sixteen stable MI thumbnail slots. */
+static const void* sDirtyTextureAddresses[16];
+bool gfx_texture_mark_dirty(const void* address) {
+    if (!address) return false;
+    /* DJUI can optimize repeated loads by address. A same-address content
+     * update must still reach import_texture on the next draw. */
+    for (unsigned tile = 0; tile < 2; tile++)
+        if (rdp.loaded_texture[tile].addr == address) rdp.textures_changed[tile] = true;
+    for (unsigned i = 0; i < 16; i++) if (sDirtyTextureAddresses[i] == address) return true;
+    for (unsigned i = 0; i < 16; i++) if (!sDirtyTextureAddresses[i]) { sDirtyTextureAddresses[i] = address; return true; }
+    return false;
+}
+static bool gfx_texture_take_dirty(const void* address) {
+    for (unsigned i = 0; i < 16; i++) if (sDirtyTextureAddresses[i] == address) { sDirtyTextureAddresses[i] = NULL; return true; }
+    return false;
+}
+
 static bool gfx_texture_cache_lookup(int tile, struct TextureHashmapNode **n, const uint8_t *orig_addr, uint32_t fmt, uint32_t siz) {
+    bool dirty = gfx_texture_take_dirty(orig_addr);
     size_t hash = (uintptr_t)orig_addr;
 #define CMPADDR(x, y) x == y
 
@@ -336,7 +354,7 @@ static bool gfx_texture_cache_lookup(int tile, struct TextureHashmapNode **n, co
         if (CMPADDR((*node)->texture_addr, orig_addr) && (*node)->fmt == fmt && (*node)->siz == siz) {
             gfx_rapi->select_texture(tile, (*node)->texture_id);
             *n = *node;
-            return true;
+            return !dirty; /* Re-upload into the existing GPU texture when requested. */
         }
         node = &(*node)->next;
     }

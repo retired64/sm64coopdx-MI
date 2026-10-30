@@ -15,6 +15,7 @@ struct MiCatalog {
     MiCatalogStatus status = MI_CATALOG_INVALID;
     std::vector<MiCatalogEntry> entries;
     std::vector<std::vector<MiCatalogFile>> files;
+    std::vector<std::vector<MiCatalogVersion>> versions;
 };
 
 namespace {
@@ -69,6 +70,11 @@ template<size_t N> void display(char (&out)[N], const std::string& value) {
     out[clean.size()] = '\0';
 }
 
+template<size_t N> bool exact(char (&out)[N], const std::string& value) {
+    if(value.size()>=N||std::any_of(value.begin(),value.end(),[](unsigned char c){return c<32||c==127;}))return false;
+    std::memcpy(out,value.c_str(),value.size()+1);return true;
+}
+
 unsigned char lower_ascii(unsigned char c) {
     return c >= 'A' && c <= 'Z' ? c + ('a' - 'A') : c;
 }
@@ -112,7 +118,8 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
         std::vector<MiCatalogEntry> entries;
         entries.reserve(mods->size());
         std::vector<std::vector<MiCatalogFile>> sources;
-        size_t fileTotal = 0;
+        size_t fileTotal = 0, versionTotal = 0;
+        std::vector<std::vector<MiCatalogVersion>> metadata;
         for (const auto& mod : *mods) {
             if (!mod.is_object() || !mod.contains("id")) return catalog;
             const std::string modId = identity(mod["id"]);
@@ -122,6 +129,7 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
             const auto versions = mod.find("versions");
             if (versions == mod.end() || !versions->is_array()) return catalog;
             std::vector<MiCatalogFile> modFiles;
+            std::vector<MiCatalogVersion> modVersions;
             std::set<std::string> versionIds;
             for (const auto& version : *versions) {
                 if (!version.is_object()) return catalog;
@@ -131,6 +139,12 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
                 auto resolved = version.find("resolved");
                 if (files == version.end() || !files->is_array() || resolved == version.end() || !resolved->is_boolean()) return catalog;
                 if (resolved->get<bool>() && files->empty()) return catalog;
+                if(++versionTotal>20000)return catalog;
+                MiCatalogVersion meta{};
+                meta.exact=exact(meta.id,versionId)&&exact(meta.label,field(version,"version"))&&
+                    exact(meta.date,field(version,"release_date"))&&exact(meta.timestamp,field(version,"release_timestamp"))&&
+                    exact(meta.providerDate,field(version,"provider_release_date"));
+                meta.resolved=resolved->get<bool>();modVersions.push_back(meta);
                 std::set<std::string> fileIds;
                 for (const auto& file : *files) {
                     if (!file.is_object()) return catalog;
@@ -148,6 +162,7 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
                         exact(source.fileId, fileId) && exact(source.filename, field(file, "filename")) && exact(source.url, url);
                     display(source.version, field(version, "version"));
                     display(source.label, field(file, "display_name"));
+                    exact(source.role, field(file, "role"));
                     auto hash = field(file, "sha256");
                     bool hashValid = hash.empty() || (hash.size() == 64 && std::all_of(hash.begin(), hash.end(),
                         [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }));
@@ -167,8 +182,12 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
             std::memcpy(entry.id, modId.c_str(), modId.size() + 1);
             display(entry.title, title);
             if (entry.title[0] == '\0') return catalog;
+            std::string image = field(mod, "image_url");
+            if (image.empty()) image = field(mod, "icon_url");
+            if (image.compare(0, 8, "https://") == 0) exact(entry.imageUrl, image);
             display(entry.author, field(mod, "author"));
             display(entry.version, field(mod, "version"));
+            entry.versionExact=field(mod,"version")==entry.version;
             display(entry.category, field(mod, "category"));
             std::string description = field(mod, "description");
             auto translations = mod.find("description_translations");
@@ -183,9 +202,11 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
             display(entry.description, description);
             entries.push_back(entry);
             sources.push_back(std::move(modFiles));
+            metadata.push_back(std::move(modVersions));
         }
         catalog->entries = std::move(entries);
         catalog->files = std::move(sources);
+        catalog->versions = std::move(metadata);
         catalog->status = MI_CATALOG_READY;
     } catch (const std::exception&) {
         /* No C++ exception crosses the C/game boundary; no partial catalog. */
@@ -230,4 +251,14 @@ extern "C" size_t mi_catalog_file_count(const struct MiCatalog* catalog, size_t 
 }
 extern "C" const struct MiCatalogFile* mi_catalog_file(const struct MiCatalog* catalog, size_t index, size_t fileIndex) {
     return fileIndex < mi_catalog_file_count(catalog, index) ? &catalog->files[index][fileIndex] : nullptr;
+}
+
+extern "C" size_t mi_catalog_version_count(const MiCatalog* catalog,size_t index) {
+    return index<mi_catalog_count(catalog)?catalog->versions[index].size():0;
+}
+extern "C" const MiCatalogVersion* mi_catalog_version(const MiCatalog* catalog,size_t index,size_t versionIndex) {
+    return versionIndex<mi_catalog_version_count(catalog,index)?&catalog->versions[index][versionIndex]:nullptr;
+}
+extern "C" MiCatalog* mi_catalog_clone(const MiCatalog* catalog) {
+    try{return catalog?new MiCatalog(*catalog):nullptr;}catch(...){return nullptr;}
 }

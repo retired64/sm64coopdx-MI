@@ -26,6 +26,11 @@ La documentación heredada del juego permanece en sus rutas originales.
 
 ## Integración vigente
 
+- [CATALOG_UPDATES.md](CATALOG_UPDATES.md): consulta de solo lectura y resultados
+  integrados en el catálogo, sin reemplazo todavía.
+- [CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md): diseño de tarjetas, carga de
+  imágenes, caché acotada y ciclo de vida de texturas.
+
 - [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md): instalación Lua/ZIP, progreso,
   recibos, recuperación, límites y pruebas locales.
 
@@ -34,6 +39,12 @@ La documentación heredada del juego permanece en sus rutas originales.
   y lectura actuales.
 - [DJUI_VIEWPORT_AND_TRANSLATIONS.md](DJUI_VIEWPORT_AND_TRANSLATIONS.md):
   desplazamiento de menús y respaldo de traducciones.
+
+## Planes pendientes
+
+- [CATALOG_UPDATES_PLAN.md](CATALOG_UPDATES_PLAN.md): detección interna y reemplazo
+  seguro usando únicamente el contrato JSON existente, sin añadir lista
+  de instalaciones.
 
 ## Etapas históricas
 

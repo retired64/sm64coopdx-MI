@@ -41,6 +41,15 @@ int main(void) {
             }
         }
     }
+    const float cardWidths[] = {300,480,640,1000};
+    for (unsigned i=0;i<4;i++) for(unsigned h=220;h<=300;h+=40){
+        struct MiCardLayout card=mi_card_layout(cardWidths[i],h);
+        assert(card.imageSize>0&&card.textWidth>0);
+        assert(card.imageX+card.imageSize<card.textX);
+        assert(card.textX+card.textWidth<=cardWidths[i]);
+        assert(card.imageY+card.imageSize<=h);
+        assert(card.textY+200<=h);
+    }
     struct MiCatalogLayout wide = mi_catalog_layout(1280, 720);
     assert(wide.columns == 2 && wide.rows == 2 && wide.pageSize == 4);
     struct MiCatalogLayout narrow = mi_catalog_layout(640, 720);

@@ -22,8 +22,8 @@ MI integra obtención de mods dentro del juego Android: catálogo, instalación 
 actualizaciones futuras. El juego sigue siendo responsable de descubrir, describir,
 seleccionar, activar y desactivar mods locales. No duplicar ese motor ni sus reglas.
 
-La aplicación Flutter y el scraper son referencias/fuentes separadas; no incorporar
-Flutter ni copiar su arquitectura de engines/Workers al proceso C/C++ del juego.
+El contrato externo del fork es el catálogo JSON publicado. No incorporar Flutter
+ni copiar arquitecturas de engines/Workers al proceso C/C++ del juego.
 Conservar el JSON como contrato vigente hasta aprobar una migración medida.
 La extensión .db no garantiza reducción de peso; véase sección 25 del historial.
 
@@ -521,3 +521,16 @@ En cada sync revisar semántica de fs_writepath, fcntl/renameat2, miniz/curl,
 manifest/recibos, lifetime y callbacks DJUI. No basta resolver conflictos textuales.
 Añadir prueba Lua/ZIP/cancelación/recuperación y detección mediante Refrescar.
 No promover esta implementación antes de completar pruebas locales autorizadas.
+
+
+## Consulta de actualizaciones y miniaturas — implementación local
+
+Contratos: [CATALOG_UPDATES.md](CATALOG_UPDATES.md) y
+[CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md). Nuevos módulos mi_updates,
+mi_thumbnail y mi_thumbnail_texture; tests/mi/updates_test.cpp, thumbnail_cli.cpp,
+thumbnail_texture_test.c y herramientas test_updates.py/test_thumbnails.py.
+Metadata/clone del catálogo, revisión del instalador, UI/idiomas y geometría se
+adaptan. gfx_pc.c/.h añade refresco opt-in de textura por dirección, sin vaciado
+global ni cambio del contrato de las demás texturas. Incluir estos puntos en la
+revisión semántica de upstream. No hay reemplazo de mods ni limpieza de recibos.
+Solo JSON público como contrato; no conocimiento de producción de datos.

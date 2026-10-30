@@ -25,6 +25,7 @@ constexpr uint64_t MAX_DOWNLOAD = 512ULL*1024*1024, MAX_EXPANDED = 1024ULL*1024*
 constexpr uint64_t MAX_FILE = 256ULL*1024*1024;
 constexpr unsigned MAX_FILES = 4096;
 std::atomic<bool> busy{false};
+std::atomic<uint64_t> installRevision{0};
 struct Failure { MiInstallError code; };
 void require(bool ok, MiInstallError code) { if (!ok) throw Failure{code}; }
 struct Descriptor {
@@ -366,7 +367,7 @@ void* work(void* context) {
     if(!delivered&&!journalPath.empty())fs::remove(journalPath,error);
     {
         std::lock_guard<std::mutex> guard(op->mutex);
-        busy=false;
+        installRevision++;busy=false;
         if(complete){op->info.state=MI_INSTALL_COMPLETE;op->info.error=MI_INSTALL_OK;op->info.progress=1;}
     }
     release(op);return nullptr;
@@ -377,11 +378,12 @@ extern "C" MiInstall* mi_install_start(const char* userRoot,const MiCatalogFile*
     auto* op=new(std::nothrow)MiInstall;if(!op)return nullptr;
     try{op->root=userRoot;op->source=*source;}catch(...){delete op;return nullptr;}
     if(busy.exchange(true)){op->info.state=MI_INSTALL_FAILED;op->info.error=MI_INSTALL_BUSY;return op;}
+    installRevision++;
     pthread_attr_t attr;int result=pthread_attr_init(&attr);
     if(!result){result=pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
         if(!result){op->owners++;pthread_t thread;result=pthread_create(&thread,&attr,work,op);if(result)release(op);}
         pthread_attr_destroy(&attr);}
-    if(result){busy=false;op->info.state=MI_INSTALL_FAILED;op->info.error=MI_INSTALL_STORAGE;}
+    if(result){installRevision++;busy=false;op->info.state=MI_INSTALL_FAILED;op->info.error=MI_INSTALL_STORAGE;}
     return op;
 }
 extern "C" bool mi_install_poll(MiInstall* op,MiInstallInfo* info) {
@@ -392,3 +394,6 @@ extern "C" void mi_install_cancel(MiInstall* op) {
     if(op->info.state<MI_INSTALL_COMMITTING){op->cancelled=true;op->info.state=MI_INSTALL_CANCELLING;}
 }
 extern "C" void mi_install_close(MiInstall* op) {if(op){mi_install_cancel(op);release(op);}}
+
+extern "C" uint64_t mi_install_revision(void){return installRevision.load();}
+extern "C" bool mi_install_is_busy(void){return busy.load();}

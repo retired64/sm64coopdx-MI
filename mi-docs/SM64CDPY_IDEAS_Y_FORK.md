@@ -21,7 +21,6 @@ publicación del catálogo.
 Repositorios locales de referencia:
 
 - Administrador: ~/sm64cdpy.releases/
-- Scraper y publicación de catálogo: ~/sm64cdpy/
 - Juego: ~/sm64coopdx/, rama android, origen ManIsCat2/sm64coopdx.
 
 El análisis se basa en una inspección parcial de esos repositorios, no en una
@@ -31,13 +30,12 @@ prueba de compilación conjunta ni una auditoría completa de licencias.
 
 | Proyecto | Aportación actual observada |
 |---|---|
-| sm64cdpy | Recopilación del catálogo, versiones, archivos, resolución de enlaces y publicación de datos. |
 | sm64cdpy.releases | Flutter, catálogo, descargas persistentes, instalación, biblioteca, actualizaciones y recuperación. |
 | sm64coopdx, android | Motor, ejecución Lua, incompatibilidades, DynOS y multijugador. |
 
 El contrato del catálogo ya separa identidad de mod, versión y archivo. La app
 cuenta con Kotlin, WorkManager, extracción y seguimiento de operaciones. El
-scraper dispone de validación y generación de manifiestos de catálogo.
+fork consume el catálogo publicado como contrato de datos externo.
 
 Hallazgo favorable: platform/app/build.gradle del juego contempla compilar como
 biblioteca mediante BUILD_AS_LIBRARY. Es un punto de partida para explorar la
@@ -97,8 +95,8 @@ Medir si conviene liberar el engine Flutter durante la partida. Mantener juego,
 Flutter y engine del overlay simultáneamente podría perjudicar teléfonos modestos;
 es una hipótesis de rendimiento pendiente de mediciones.
 
-El scraper sigue fuera del teléfono. Publica catálogos validados consumidos por
-ambas ediciones. No se propone incluir Python ni hacer scraping durante partidas.
+El juego consume únicamente el catálogo JSON publicado y sus URLs de descarga.
+La producción de esos datos no forma parte de la arquitectura del fork.
 
 ## 5. Ideas de funciones
 
@@ -161,7 +159,7 @@ integrada de SM64CDPY, conservando créditos y procedencia.
 Crear un juego original independiente implicaría además recursos, contenido e
 identidad propios; no basta con cambiar nombre o interfaz.
 
-Se observaron licencias MIT en los repositorios del administrador y del scraper.
+Se observó licencia MIT en el repositorio del administrador.
 No se encontró una licencia general equivalente en la raíz del juego revisado.
 Esto no es una auditoría completa: no asumir que el conjunto puede relicenciarse
 como MIT. Revisar permisos, avisos y licencias de componentes, recursos y mods
@@ -237,7 +235,7 @@ descarga, instalación y acceso a los mods instalados.
 
 El usuario aclara que no quiere Flutter en esta edición. El administrador actual
 serviría como referencia funcional: adaptar y reescribir componentes al lenguaje
-y arquitectura del juego, conservando los datos JSON y la publicación del scraper.
+y arquitectura del juego, conservando el contrato JSON publicado.
 La app independiente puede conservarse; no se ha decidido retirarla.
 
 Esta dirección sustituye como propuesta principal la idea inicial de una pantalla
@@ -275,8 +273,8 @@ Flutter y otra Activity para jugar. La comparación anterior queda como historia
    Puede combinar C/C++ con Kotlin/Java para capacidades específicas de Android.
 4. Motor: reconocimiento, selección e incompatibilidades, usando sus reglas y
    estados reales. Los cambios del motor se solicitan desde su hilo adecuado.
-5. Scraper externo: continúa generando el catálogo. No se ejecuta Python en el
-   teléfono ni dentro del juego.
+5. Fuente externa: el juego consume el catálogo JSON publicado sin depender de
+   su proceso de producción.
 
 «Nativo al juego» describe principalmente la interfaz y la integración con el
 motor. No exige que todo sea C: servicios Kotlin/Java internos pueden conservar
@@ -292,7 +290,7 @@ Para esta propuesta, el punto de partida es ampliar el propio juego Android.
 | Componente actual | Tratamiento propuesto |
 |---|---|
 | JSON, IDs y contrato del catálogo | Reutilizar y versionar; conservar compatibilidad. |
-| Scraper, validadores y publicación | Mantener fuera del juego. |
+| Fuente del catálogo | Conocer únicamente su contrato JSON publicado. |
 | Pantallas Flutter, widgets y Riverpod | Reescribir como pantallas DJUI y estado propio del módulo. |
 | Reglas de selección replicadas en el administrador | Usar las del motor, evitando otra copia. |
 | Resolución de URLs en Dart | Adaptar al servicio nativo o ampliar el contrato con referencias estables resolubles; no asumir que URLs temporales pueden publicarse para siempre. |
@@ -358,7 +356,7 @@ biblioteca local o controles de activación dentro de MI.
 
 MI se enfoca en resolver cómo obtener los mods:
 
-- Presentar el catálogo remoto del scraper, con búsqueda y detalles.
+- Presentar el catálogo JSON remoto, con búsqueda y detalles.
 - Identificar versiones y archivos instalables.
 - Descargar, verificar e instalar automáticamente.
 - Conservar recibos e información suficiente para reconocer actualizaciones.
@@ -866,7 +864,7 @@ Esta sección precisa las anteriores cuando existe diferencia de enfoque.
 ### 17.1 Valor del producto
 
 MI tiene un alcance concreto: obtener e instalar mods y mantenerlos actualizados
-dentro del juego. El scraper publica los datos, MI entrega los archivos y el
+dentro del juego. El catálogo aporta los datos, MI entrega los archivos y el
 motor conserva descubrimiento, selección y ejecución. El administrador Flutter
 sirve de referencia y puede seguir siendo útil como producto independiente
 mientras el fork madura.
@@ -1020,7 +1018,7 @@ Contenido mínimo:
 - Botón Instalar y navegación Atrás.
 - Estados de carga, lista vacía y error.
 
-Usar primero una muestra pequeña del mismo contrato JSON que publica el scraper.
+Usar primero una muestra pequeña del contrato JSON publicado.
 Validar disposición, táctil y mando. No introducir Flutter. Las imágenes y el
 acabado visual avanzado pueden esperar.
 
@@ -1031,8 +1029,8 @@ Consultar el catálogo remoto sin bloquear el hilo del juego y conservar la
 última copia local válida. Validar esquema antes de sustituir la caché; un fallo
 de red o formato no debe destruirla ni producir una lista engañosamente vacía.
 
-No incorporar el scraper Python al APK. Su salida sigue siendo el contrato entre
-publicación y juego. Reutilizar referencias estables de descarga y adaptar los
+El contrato externo del APK es el JSON publicado. Reutilizar referencias estables
+de descarga y adaptar los
 resolutores necesarios, sin asumir que todos los enlaces del catálogo son URLs
 directas listas para el instalador.
 
@@ -1095,7 +1093,7 @@ solicitado ni añadir validaciones de scripts que pertenecen al juego.
 ### 18.9 Criterios de aceptación del primer MVP
 
 - La base Android y el APK MI se compilan con un procedimiento conocido.
-- Explorar mods usa DJUI y datos del contrato real del scraper.
+- Explorar mods usa DJUI y datos del contrato JSON publicado.
 - Catálogo remoto y caché funcionan con carga, error y ausencia de red.
 - Un Lua suelto y un ZIP soportado se instalan en la ubicación correcta.
 - El archivo de transporte no se conserva como descarga del usuario.
@@ -1141,7 +1139,7 @@ El lector vive separado en src/pc/mod_integrations/, usa el JSON vendorizado y
 expone una interfaz C. No tiene persistencia ni altera selección de mods. Los
 controles y memoria pertenecen al panel y se liberan al salir.
 
-Pruebas nativas, validador del scraper para la muestra, compilación Termux y
+Pruebas nativas, validación del contrato JSON de la muestra, compilación Termux y
 verificación de firma/alineación/contenido del APK correctos. La navegación y
 presentación en dispositivo siguen pendientes de probar. No se ha ejecutado
 la vía Gradle ni se han creado commits/releases como parte de esta entrega.
@@ -1242,9 +1240,9 @@ en tamaño de transferencia como en tamaño almacenado, tiempo de apertura y RAM
 Medir también búsqueda y paginación en un teléfono Android representativo.
 Compresión de transferencia y formato local son decisiones independientes.
 
-Una posibilidad es conservar el JSON como salida canónica del scraper y generar
-automáticamente un artefacto optimizado para el juego. También se puede migrar
-la fuente si resulta conveniente; todavía no se elige esquema ni tecnología.
+Una posibilidad es conservar el JSON como contrato externo y preparar una
+representación local optimizada para el juego. Todavía no se elige esquema ni
+tecnología; cualquier formato de consumo futuro debe mantener compatibilidad.
 Las actualizaciones incrementales del catálogo son otra mejora posterior, con
 mayor complejidad; no confundirlas con actualizar los archivos de los mods.
 
@@ -1338,6 +1336,31 @@ Se implementa el primer flujo directo del catálogo: selección de archivo/versi
 descarga temporal, extracción nativa con miniz existente, entrega sin reemplazo,
 recibo y recuperación. Diseño de progreso reutiliza DjuiProgressBar; activación y
 Refrescar permanecen en el juego. Alcance y límites: [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md).
-Se compararon referencias de Flutter, scraper y motor, sin incorporar Flutter.
+Se conserva el contrato JSON externo y la integración nativa con el motor.
 Todavía no hay actualizaciones ni RAR/7z. Cambios solo locales por instrucción del
 usuario: sin commit, push ni Actions. Prueba física del instalador pendiente.
+
+
+## Actualizaciones internas sin saturar la interfaz — 2026-10-30
+
+Decisión del usuario: no crear una lista de instalaciones MI; mantener versiones y
+asociaciones internamente y mostrar solo las actualizaciones que correspondan.
+La autoridad remota es el catálogo, sin depender de versiones escritas en main.lua.
+Se documenta una primera implementación solo en el fork y basada en el JSON: [CATALOG_UPDATES_PLAN.md](CATALOG_UPDATES_PLAN.md). Incluye fechas
+ambiguas, variantes, recibos antiguos, borrado manual y reemplazo con respaldo.
+No detecta con certeza binarios reemplazados bajo los mismos IDs sin hash remoto.
+El juego solo puede detectar cambios disponibles en el JSON publicado.
+Todo este flujo de actualización sigue pendiente;
+esta entrada no modifica código ni publica catálogos.
+
+
+## Consulta interna y tarjetas con miniaturas — 2026-10-30
+
+Se integra localmente Buscar actualizaciones con resultados en las tarjetas y
+versión instalada/disponible en detalles. Sin lista de instalaciones ni reemplazo
+activo todavía. Se incorporan miniaturas HTTPS de image_url/icon_url del JSON,
+marcador si faltan, colores por tema y carga/caché acotadas. La descripción completa
+permanece en detalles. No se cambia Refrescar/activación del juego.
+Contratos y validación: [CATALOG_UPDATES.md](CATALOG_UPDATES.md),
+[CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md). Trabajo local sin commit ni push;
+prueba física del nuevo diseño pendiente. Solo contrato público del catálogo.

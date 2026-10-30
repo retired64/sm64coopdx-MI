@@ -31,16 +31,27 @@ lectura clara, uso táctil y mando, y continuidad con la interfaz del juego.
 - El juego descubre mods locales, lee sus metadatos, refresca, activa/desactiva y
   aplica sus reglas de ejecución. No duplicar su escáner ni crear otra activación.
 - No incorporar Flutter ni copiar WorkManager/SAF/engines de la aplicación hermana
-  al juego. Esa aplicación y el scraper son referencias, no dependencias implícitas.
+  al juego. Las referencias de otras aplicaciones no son dependencias implícitas.
 - Mantener separación entre actualizar catálogo, actualizar mods y actualizar APK.
 - No certificar compatibilidad jugable por listar un mod. Sí responder por el
   comportamiento de nuestra descarga, escritura, extracción y mensajes de resultado.
 
 Estado de referencia: catálogo remoto, caché, búsqueda, detalle, cuadrícula y
 accesibilidad están implementados. Instalación Lua/ZIP y recibos schema 1 están implementados localmente para pruebas.
-Asociaciones de mods previos, reemplazo/actualizaciones, Update all, SQLite y OTA
+Consulta de actualizaciones de solo lectura y miniaturas implementadas localmente:
+ver mi-docs/CATALOG_UPDATES.md y mi-docs/CATALOG_THUMBNAILS.md.
+Asociaciones de mods previos, reemplazo, Update all, SQLite y OTA
 propia siguen pendientes. Ver mi-docs/CATALOG_INSTALLATION.md. Verificar ese
 estado al retomar trabajo y actualizarlo cuando realmente cambie.
+
+### Frontera pública de datos
+
+El fork conoce únicamente el contrato JSON publicado y las URLs declaradas en él.
+No incorporar ni documentar procesos, herramientas, repositorios, rutas locales,
+workflows o configuraciones privadas que produzcan esos datos. Esta regla se aplica
+al código, pruebas, fixtures, documentación y mensajes de commit/PR. Ejemplos deben
+ser sintéticos o proceder del contrato público, sin credenciales ni información
+interna. Los workflows propios de compilación MI sí pertenecen a este repositorio.
 
 ## 3. Mapa de documentación y orden de consulta
 
@@ -49,6 +60,8 @@ de MI se centraliza en mi-docs/; AGENTS.md permanece en la raíz:
 
 | Ruta | Para qué se consulta |
 |---|---|
+| [CATALOG_UPDATES.md](mi-docs/CATALOG_UPDATES.md) | Consulta de versiones posteriores, recibos e invalidación |
+| [CATALOG_THUMBNAILS.md](mi-docs/CATALOG_THUMBNAILS.md) | Tarjetas, imágenes, caché y slots de texturas |
 | [CATALOG_INSTALLATION.md](mi-docs/CATALOG_INSTALLATION.md) | Instalador local Lua/ZIP, propiedad, progreso y recuperación |
 | [RULES.md](mi-docs/RULES.md) | Contratos, revisión semántica, inventario de archivos y tres commits iniciales |
 | [MI_ACTIONS_BUILD.md](mi-docs/MI_ACTIONS_BUILD.md) | Workflow manual, toolchain, artefactos y comandos gh; comprobar estado real del primer run |
@@ -232,6 +245,8 @@ Para catálogo/UI/idiomas y en sincronizaciones:
 ```sh
 python tools/mi/embed_catalog.py --check
 python tools/mi/test_catalog.py
+python tools/mi/test_updates.py
+python tools/mi/test_thumbnails.py --bundled-curl
 ```
 
 Para red, caché, hilos, dependencias de transporte o sincronización del motor:

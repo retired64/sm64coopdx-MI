@@ -1,5 +1,12 @@
 # MI: tarjetas y lectura accesible
 
+> Ampliación local — 2026-10-30: tarjetas con miniaturas y consulta de versiones
+> posteriores, sin reemplazo de archivos. Diseño y ciclo de vida vigentes:
+> [CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md),
+> [CATALOG_UPDATES.md](CATALOG_UPDATES.md). Las descripciones de tarjetas sin
+> imágenes de este documento corresponden a la etapa anterior.
+
+
 2026-10-29. Iteración basada en las cuatro capturas del usuario en Screenshots.
 Sustituye las filas estrechas de texto de CATALOG_WORKSPACE.md.
 

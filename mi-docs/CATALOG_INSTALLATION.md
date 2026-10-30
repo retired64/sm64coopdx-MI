@@ -134,8 +134,8 @@ requieren diagnóstico conservando diario, recibos y mods. No recomendar borrar
 
 Makefile y Android.mk enumeran automáticamente los nuevos .cpp en mod_integrations;
 comprobar link y libmain empaquetada en cada sincronización. El escáner, importador,
-activación y globals de la carga inicial no se modifican. La app Flutter y scraper
-son referencias de lógica/contrato; no se incorporan como dependencias.
+activación y globals de la carga inicial no se modifican. El catálogo JSON es el
+contrato externo de datos; su producción no forma parte del fork.
 
 ## Validación y prueba física pendiente
 

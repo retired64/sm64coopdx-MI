@@ -15,7 +15,7 @@ Unicode case folding are not implemented. No network call, game configuration
 write, mod installation or receipt is performed. Install is disabled and the
 panel identifies the sample/preview explicitly.
 
-Catalog source: tests/mi/catalog_sample.json. It follows the scraper's publication
+Catalog source: tests/mi/catalog_sample.json. It follows the published JSON
 shape (catalog identity/status/count, mod IDs, version IDs and file IDs). The
 sample uses example.invalid URLs and cannot be downloaded. UI strings are
 localized in English, Spanish and Portuguese, including embedded fallback labels
@@ -90,8 +90,7 @@ Installation Lua/ZIP with receipts/cancellation follows; not part of this previe
 ## Validation recorded — 2026-10-29
 
 - `python tools/mi/test_catalog.py`: passed with Clang 21.1.8 and C++17.
-- Scraper `scripts/validate_catalog.py` against the fixture: passed (8 mods,
-  8 versions, 8 files). This is an external reference check, not a fork dependency.
+- JSON contract validation of the fixture: passed (8 mods, 8 versions, 8 files).
 - Native game C/C++ compilation and APK packaging: passed through the Termux Makefile.
 - APK signature verification, 4 KiB alignment and ZIP CRC checks: passed.
 - APK ARM64 libmain.so matches the built library; EN/ES/PT MI strings are packaged.

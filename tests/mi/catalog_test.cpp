@@ -57,6 +57,11 @@ int main(int argc, char** argv) {
     source["sha256"] = nullptr; source["download_url"] = "https://example.invalid/" + std::string(2100, 'x');
     catalog = parse(installable); assert(!mi_catalog_file(catalog, 0, 0)->supported); mi_catalog_free(catalog);
 
+    auto images = sample; images["mods"][0]["icon_url"] = "https://example.invalid/icon.png";
+    catalog = parse(images); assert(std::strcmp(mi_catalog_entry(catalog,0)->imageUrl,"https://example.invalid/icon.png")==0);mi_catalog_free(catalog);
+    images["mods"][0]["image_url"] = "http://example.invalid/icon.png";
+    catalog = parse(images); assert(!mi_catalog_entry(catalog,0)->imageUrl[0]);mi_catalog_free(catalog);
+
     auto bad = sample;
     bad["schema_version"] = 3;
     catalog = parse(bad);

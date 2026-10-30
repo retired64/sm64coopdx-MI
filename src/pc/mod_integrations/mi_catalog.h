@@ -19,6 +19,8 @@ struct MiCatalogEntry {
     char version[64];
     char category[96];
     char description[2048];
+    char imageUrl[2048];
+    bool versionExact;
 };
 
 /* Exact download fields: never display-truncate IDs or URLs. Unsupported or
@@ -26,10 +28,20 @@ struct MiCatalogEntry {
 struct MiCatalogFile {
     char modId[64], versionId[160], fileId[160];
     char version[96], filename[256], label[192];
+    char role[24];
     char url[2048], mirror[2048], sha256[65];
     uint64_t size;
     bool supported, recommended;
 };
+/* Optional public metadata; no assumption about producer or array ordering. */
+struct MiCatalogVersion {
+    char id[160], label[96], date[48], timestamp[64], providerDate[48];
+    bool resolved, exact;
+};
+size_t mi_catalog_version_count(const struct MiCatalog* catalog, size_t index);
+const struct MiCatalogVersion* mi_catalog_version(const struct MiCatalog* catalog, size_t index, size_t versionIndex);
+/* Deep copy for independent read-only workers. Caller owns the result. */
+struct MiCatalog* mi_catalog_clone(const struct MiCatalog* catalog);
 size_t mi_catalog_file_count(const struct MiCatalog* catalog, size_t index);
 const struct MiCatalogFile* mi_catalog_file(const struct MiCatalog* catalog, size_t index, size_t fileIndex);
 
