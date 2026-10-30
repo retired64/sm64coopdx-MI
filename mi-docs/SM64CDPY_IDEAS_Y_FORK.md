@@ -1330,3 +1330,14 @@ subida del artefacto sin ROM. Quedan avisos heredados no bloqueantes de Makefile
 El usuario canceló la descarga local y pidió continuar la documentación; no se
 reanudó ni se afirma una verificación física/local del APK nuevo.
 [Registro completo](ci/2026-10-30-first-success.md).
+
+
+## Instalación Lua/ZIP local — 2026-10-30
+
+Se implementa el primer flujo directo del catálogo: selección de archivo/versión,
+descarga temporal, extracción nativa con miniz existente, entrega sin reemplazo,
+recibo y recuperación. Diseño de progreso reutiliza DjuiProgressBar; activación y
+Refrescar permanecen en el juego. Alcance y límites: [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md).
+Se compararon referencias de Flutter, scraper y motor, sin incorporar Flutter.
+Todavía no hay actualizaciones ni RAR/7z. Cambios solo locales por instrucción del
+usuario: sin commit, push ni Actions. Prueba física del instalador pendiente.

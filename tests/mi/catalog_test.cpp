@@ -39,6 +39,24 @@ int main(int argc, char** argv) {
     assert(mi_catalog_entry(catalog, SIZE_MAX) == nullptr);
     mi_catalog_free(catalog);
 
+    auto installable = sample;
+    auto& source = installable["mods"][0]["versions"][0]["files"][0];
+    source["filename"] = "test.lua"; source["download_url"] = "https://example.invalid/test.lua";
+    source["requires_primary"] = false;
+    catalog = parse(installable);
+    assert(mi_catalog_file_count(catalog, 0) > 0);
+    assert(mi_catalog_file(catalog, 0, 0)->supported);
+    assert(std::strcmp(mi_catalog_file(catalog, 0, 0)->filename, "test.lua") == 0);
+    assert(mi_catalog_file(catalog, SIZE_MAX, 0) == nullptr);
+    assert(mi_catalog_file(catalog, 0, SIZE_MAX) == nullptr);
+    mi_catalog_free(catalog);
+    source["requires_primary"] = true;
+    catalog = parse(installable); assert(!mi_catalog_file(catalog, 0, 0)->supported); mi_catalog_free(catalog);
+    source["requires_primary"] = false; source["sha256"] = "invalid";
+    catalog = parse(installable); assert(!mi_catalog_file(catalog, 0, 0)->supported); mi_catalog_free(catalog);
+    source["sha256"] = nullptr; source["download_url"] = "https://example.invalid/" + std::string(2100, 'x');
+    catalog = parse(installable); assert(!mi_catalog_file(catalog, 0, 0)->supported); mi_catalog_free(catalog);
+
     auto bad = sample;
     bad["schema_version"] = 3;
     catalog = parse(bad);

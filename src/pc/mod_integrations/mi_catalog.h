@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +20,18 @@ struct MiCatalogEntry {
     char category[96];
     char description[2048];
 };
+
+/* Exact download fields: never display-truncate IDs or URLs. Unsupported or
+ * dependent artifacts remain visible in selection but cannot be installed. */
+struct MiCatalogFile {
+    char modId[64], versionId[160], fileId[160];
+    char version[96], filename[256], label[192];
+    char url[2048], mirror[2048], sha256[65];
+    uint64_t size;
+    bool supported, recommended;
+};
+size_t mi_catalog_file_count(const struct MiCatalog* catalog, size_t index);
+const struct MiCatalogFile* mi_catalog_file(const struct MiCatalog* catalog, size_t index, size_t fileIndex);
 
 struct MiCatalog* mi_catalog_parse(const char* json, size_t length);
 struct MiCatalog* mi_catalog_parse_language(const char* json, size_t length, const char* language);

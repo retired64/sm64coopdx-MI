@@ -14,6 +14,7 @@ using nlohmann::json;
 struct MiCatalog {
     MiCatalogStatus status = MI_CATALOG_INVALID;
     std::vector<MiCatalogEntry> entries;
+    std::vector<std::vector<MiCatalogFile>> files;
 };
 
 namespace {
@@ -110,6 +111,8 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
         std::set<std::string> ids;
         std::vector<MiCatalogEntry> entries;
         entries.reserve(mods->size());
+        std::vector<std::vector<MiCatalogFile>> sources;
+        size_t fileTotal = 0;
         for (const auto& mod : *mods) {
             if (!mod.is_object() || !mod.contains("id")) return catalog;
             const std::string modId = identity(mod["id"]);
@@ -118,6 +121,7 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
             if (!valid_id(modId) || !ids.insert(modId).second || title.empty()) return catalog;
             const auto versions = mod.find("versions");
             if (versions == mod.end() || !versions->is_array()) return catalog;
+            std::vector<MiCatalogFile> modFiles;
             std::set<std::string> versionIds;
             for (const auto& version : *versions) {
                 if (!version.is_object()) return catalog;
@@ -134,6 +138,29 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
                     auto url = field(file, "download_url");
                     if (fileId.empty() || !fileIds.insert(fileId).second || field(file, "filename").empty() ||
                         (url.compare(0, 8, "https://") != 0 && url.compare(0, 7, "http://") != 0)) return catalog;
+                    if (++fileTotal > 20000) return catalog;
+                    MiCatalogFile source = {};
+                    auto exact = [](auto& out, const std::string& value) {
+                        if (value.size() >= sizeof(out) || value.find('\0') != std::string::npos) return false;
+                        std::memcpy(out, value.c_str(), value.size() + 1); return true;
+                    };
+                    bool exactFields = exact(source.modId, modId) && exact(source.versionId, versionId) &&
+                        exact(source.fileId, fileId) && exact(source.filename, field(file, "filename")) && exact(source.url, url);
+                    display(source.version, field(version, "version"));
+                    display(source.label, field(file, "display_name"));
+                    auto hash = field(file, "sha256");
+                    bool hashValid = hash.empty() || (hash.size() == 64 && std::all_of(hash.begin(), hash.end(),
+                        [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }));
+                    if (hashValid) exact(source.sha256, hash);
+                    if (file.contains("size_bytes") && file["size_bytes"].is_number_unsigned()) source.size = file["size_bytes"].get<uint64_t>();
+                    if (field(file, "mirror_status") == "available" && field(file, "mirror_priority") == "fallback")
+                        exact(source.mirror, field(file, "mirror_url"));
+                    std::string filename = field(file, "filename");
+                    bool type = filename.size() > 4 && (filename.substr(filename.size()-4) == ".lua" || filename.substr(filename.size()-4) == ".zip");
+                    source.recommended = file.value("recommended", false);
+                    source.supported = exactFields && hashValid && type && resolved->get<bool>() &&
+                        !file.value("requires_primary", false) && url.compare(0, 8, "https://") == 0;
+                    modFiles.push_back(source);
                 }
             }
             MiCatalogEntry entry = {};
@@ -155,8 +182,10 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
             }
             display(entry.description, description);
             entries.push_back(entry);
+            sources.push_back(std::move(modFiles));
         }
         catalog->entries = std::move(entries);
+        catalog->files = std::move(sources);
         catalog->status = MI_CATALOG_READY;
     } catch (const std::exception&) {
         /* No C++ exception crosses the C/game boundary; no partial catalog. */
@@ -194,4 +223,11 @@ extern "C" size_t mi_catalog_match_index(const struct MiCatalog* catalog, const 
     for (size_t i = 0; i < mi_catalog_count(catalog); ++i)
         if (mi_catalog_matches(mi_catalog_entry(catalog, i), query) && offset-- == 0) return i;
     return SIZE_MAX;
+}
+
+extern "C" size_t mi_catalog_file_count(const struct MiCatalog* catalog, size_t index) {
+    return index < mi_catalog_count(catalog) ? catalog->files[index].size() : 0;
+}
+extern "C" const struct MiCatalogFile* mi_catalog_file(const struct MiCatalog* catalog, size_t index, size_t fileIndex) {
+    return fileIndex < mi_catalog_file_count(catalog, index) ? &catalog->files[index][fileIndex] : nullptr;
 }

@@ -1,5 +1,14 @@
 # Mantener MI actualizado con Android estable
 
+> Estado local posterior — 2026-10-30: instalación Lua/ZIP y recibos schema 1
+> implementados y con funcionamiento confirmado por el usuario tras corregir
+> bloqueo y progreso. El usuario autorizó commit/push a mi-main. Las referencias históricas
+> a Instalar deshabilitado quedan superadas por [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md).
+> Reemplazo/actualizaciones de mods, asociaciones previas y RAR/7z siguen pendientes.
+> El usuario confirmó funcionamiento del APK CI anterior; el instalador nuevo
+> requiere su propia prueba física.
+
+
 Fecha de referencia: 2026-10-29. Alcance: fork `retired64/sm64coopdx-MI`, rama
 `mi-main`. Reglas de implementación e inventario: [RULES.md](RULES.md).
 Este documento prescribe el procedimiento; no acredita que se haya ejecutado.
@@ -346,3 +355,16 @@ protecciones y checks
 requeridos en GitHub, CI Android dedicado a MI, identidad/versionado público,
 registro reproducible de entorno y pruebas en otro teléfono. No afirmar que esos
 controles existen hasta verificar su configuración efectiva.
+
+
+## Instalador MI local — puntos de contacto nuevos
+
+Contrato e inventario: [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md).
+Nuevos mi_install.cpp/.h, mi_network.h y mi_sha256.h en src/pc/mod_integrations;
+nuevos tests/mi/install_cli.cpp y tools/mi/test_install.py. Modificados parser/DTO,
+request TLS compartido, detalles DJUI, idiomas/generado y tests de catálogo.
+Sin cambios al escáner, activación, importador original ni carga inicial.
+En cada sync revisar semántica de fs_writepath, fcntl/renameat2, miniz/curl,
+manifest/recibos, lifetime y callbacks DJUI. No basta resolver conflictos textuales.
+Añadir prueba Lua/ZIP/cancelación/recuperación y detección mediante Refrescar.
+No promover esta implementación antes de completar pruebas locales autorizadas.

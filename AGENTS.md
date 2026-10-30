@@ -37,8 +37,9 @@ lectura clara, uso táctil y mando, y continuidad con la interfaz del juego.
   comportamiento de nuestra descarga, escritura, extracción y mensajes de resultado.
 
 Estado de referencia: catálogo remoto, caché, búsqueda, detalle, cuadrícula y
-accesibilidad están implementados. Instalar está deshabilitado. Instalación,
-recibos/asociaciones, Update all, SQLite y OTA propia son planes. Verificar ese
+accesibilidad están implementados. Instalación Lua/ZIP y recibos schema 1 están implementados localmente para pruebas.
+Asociaciones de mods previos, reemplazo/actualizaciones, Update all, SQLite y OTA
+propia siguen pendientes. Ver mi-docs/CATALOG_INSTALLATION.md. Verificar ese
 estado al retomar trabajo y actualizarlo cuando realmente cambie.
 
 ## 3. Mapa de documentación y orden de consulta
@@ -48,6 +49,7 @@ de MI se centraliza en mi-docs/; AGENTS.md permanece en la raíz:
 
 | Ruta | Para qué se consulta |
 |---|---|
+| [CATALOG_INSTALLATION.md](mi-docs/CATALOG_INSTALLATION.md) | Instalador local Lua/ZIP, propiedad, progreso y recuperación |
 | [RULES.md](mi-docs/RULES.md) | Contratos, revisión semántica, inventario de archivos y tres commits iniciales |
 | [MI_ACTIONS_BUILD.md](mi-docs/MI_ACTIONS_BUILD.md) | Workflow manual, toolchain, artefactos y comandos gh; comprobar estado real del primer run |
 | [UPSTREAM_SETUP.md](mi-docs/UPSTREAM_SETUP.md) | Configuración efectiva por clon y herramienta setup/check |
@@ -235,6 +237,7 @@ python tools/mi/test_catalog.py
 Para red, caché, hilos, dependencias de transporte o sincronización del motor:
 
 ```sh
+python tools/mi/test_install.py --bundled-curl
 python tools/mi/test_requests.py --bundled-curl
 python tools/mi/test_requests.py --bundled-curl --live
 ```

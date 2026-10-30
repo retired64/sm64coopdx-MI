@@ -496,3 +496,78 @@ tareas. Reintento real pendiente al crear esta nota; no marcar APK CI completado
 
 [Registro de evidencia y límites](ci/2026-10-30-first-success.md). Las notas previas
 de ejecución pendiente describen el estado anterior a este resultado.
+
+
+## Instalador Lua/ZIP local — 2026-10-30
+
+- [x] Usuario confirma funcionamiento del APK CI anterior en su teléfono.
+- [x] Selección de versión/archivo en detalles e instalación directa Lua/ZIP.
+- [x] Progreso nativo por etapa, cancelación y errores localizados EN/ES/PT.
+- [x] Recibos schema 1, manifiesto SHA-256 y recuperación de entrega interrumpida.
+- [x] Preservación de destinos existentes; activación/refresco originales intactos.
+- [x] test_catalog.py: parser/selección/idiomas/layout correctos.
+- [x] test_requests.py --bundled-curl --live: correcto; catálogo HTTPS de 1307 mods.
+- [x] test_install.py --bundled-curl --live: correcto, incluida recuperación;
+  noclip.lua real instalado por HTTPS en una raíz temporal, fuera de mods reales.
+- [x] make Termux local correcto, firma válida, zipalign correcto, CRC y libmain
+  empaquetada coincidentes con la compilación.
+- [ ] Probar físicamente el instalador nuevo: Lua, ZIP, cancelación, errores,
+  almacenamiento Android real, Refrescar/activación original, escala y navegación.
+- [ ] Validar ruta Gradle con este instalador en una sesión futura autorizada.
+- [ ] Commit/push/publicación: no realizados por instrucción del usuario.
+
+APK local: build/us_pc/sm64coopdx.apk; 121956665 bytes.
+SHA-256: 2f242cd1ae0ef555fca84eb4d00120cecf8ffdf3b36d9f464259b4b15d478084.
+libmain.so SHA-256: 154b0259649b9724306a5e08734b43ab7d531112b98165340180c63cf7fe78e0.
+Log de build local: /data/data/com.termux/files/usr/tmp/mi-preview-build.log.
+El build fue incremental; no demuestra un clon limpio en otro dispositivo.
+Advertencias observadas: recetas repetidas heredadas del Makefile y aviso miniz
+sobre IO de archivos grandes en la suite; sin errores de compilación.
+Contrato, archivos, límites y matriz física: [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md).
+
+
+### Corrección de botones superpuestos tras capturas 09:22–09:23
+
+- Causa confirmada: alineación derecha combinada con offsets desde izquierda;
+  Instalar coincidía con Volver y Siguiente con Anterior. Corregidos los dos pares.
+- Sustituido separador no disponible en la fuente del juego por |.
+- Suite catálogo/idiomas/geometría, build local, firma, zipalign, CRC y coincidencia
+  de libmain correctos. Backend de instalación sin cambios en esta corrección.
+- APK corregido: /sdcard/Download/sm64coopdx-MI-install-local.apk; 121956665 bytes.
+- SHA-256: 39e38025a27286feb07b74c58dbe056fde08cc8f21c6406850d5f6750a325181.
+- Pendiente: nueva prueba física de los cuatro botones, scroll, escala e instalación.
+- Sin commit, push ni Actions. El hash del apartado anterior corresponde al APK previo.
+
+
+### Corrección de bloqueo falso y progreso oculto — 2026-10-30
+
+- [x] Causa reproducida sin alterar mods: flock sobre install.lock del usuario
+  devuelve ENOSYS (38); se comunicaba incorrectamente como otra instalación.
+- [x] Sustituido por fcntl F_SETLK; solo conflictos reales producen BUSY.
+- [x] Estado, archivo, bytes descargados y resultado siempre visibles en el pie;
+  progreso de extracción dentro de cada archivo y verificación indeterminada.
+- [x] Éxito publicado después de liberar exclusión y completar limpieza.
+- [x] Suite --bundled-curl --live --storage-root /sdcard/Download correcta;
+  noclip.lua descargado por HTTPS e instalado en una carpeta temporal externa.
+- [x] Suite final sin --live sobre /sdcard correcta, incluyendo progreso observado,
+  bloqueo entre procesos, liberación, Lua/ZIP, cancelación, errores y recuperación.
+- [x] Suite de catálogo/idiomas/geometría, generados y diff --check correctos.
+- [x] Build Termux, firma, zipalign, CRC y libmain empaquetada coincidentes.
+- [ ] Prueba física del menú corregido y descubrimiento con Refrescar.
+- [ ] Ruta Gradle/CI con este instalador: no ejecutada en este cambio.
+
+APK actualizado: /sdcard/Download/sm64coopdx-MI-install-local.apk; 121956665 bytes.
+SHA-256: 11440a7dd784fa178f57a7fe0ad3e9faf4401c305f3f850c745d582374cbbc61.
+Sin commit, push ni Actions; los hashes anteriores identifican APK previos.
+Detalle de causa y contratos: [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md).
+
+
+## Confirmación del usuario y autorización de publicación — 2026-10-30
+
+El usuario confirmó que el instalador corregido funciona y autorizó commit y push
+hacia mi-main. Corresponde al APK SHA-256
+11440a7dd784fa178f57a7fe0ad3e9faf4401c305f3f850c745d582374cbbc61.
+Esta confirmación general no acredita todos los escenarios de la matriz física;
+los casos no informados y la ruta Gradle con el instalador siguen pendientes.
+Las notas anteriores de «sin commit/push» describen el desarrollo local previo.
+No se autoriza ni ejecuta una release, subida de APK ni Actions por este registro.

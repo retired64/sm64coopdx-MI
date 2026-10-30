@@ -1,4 +1,5 @@
 #include "mi_catalog_request.h"
+#include "mi_network.h"
 #include <curl/curl.h>
 #include <zlib.h>
 #include <pthread.h>
@@ -22,8 +23,6 @@ constexpr size_t MAX_BYTES = 16 * 1024 * 1024;
 constexpr const char* CATALOG_URL = "https://raw.githubusercontent.com/retired64/sm64cdpy.releases/main/db/database_sm64coopdx.json";
 std::mutex commitMutex;
 std::atomic<uint64_t> newestGeneration{0};
-std::once_flag curlOnce;
-CURLcode curlInit = CURLE_FAILED_INIT;
 using CatalogPtr = std::unique_ptr<MiCatalog, decltype(&mi_catalog_free)>;
 }
 
@@ -146,39 +145,9 @@ int progress(void* context, curl_off_t, curl_off_t, curl_off_t, curl_off_t) {
     return static_cast<MiCatalogRequest*>(context)->cancelled ? 1 : 0;
 }
 
-#ifdef __ANDROID__
-/* Android's hashed CA filenames are not reliably usable by this old OpenSSL
- * build. Feed the same read-only system roots as PEM in memory instead. */
-std::string system_certificates() {
-    const char* directory = access("/apex/com.android.conscrypt/cacerts", R_OK) == 0 ?
-        "/apex/com.android.conscrypt/cacerts" : "/system/etc/security/cacerts";
-    DIR* handle = opendir(directory);
-    if (!handle) return {};
-    std::unique_ptr<DIR, decltype(&closedir)> owner(handle, closedir);
-    std::string certificates;
-    while (auto* entry = readdir(handle)) {
-        if (entry->d_name[0] == '.') continue;
-        std::string path = std::string(directory) + "/" + entry->d_name;
-        FILE* file = fopen(path.c_str(), "rb");
-        if (!file) continue;
-        std::unique_ptr<FILE, decltype(&fclose)> stream(file, fclose);
-        char buffer[4096];
-        size_t read;
-        size_t total = 0;
-        while ((read = fread(buffer, 1, sizeof(buffer), file)) != 0) {
-            total += read;
-            if (total > 64 * 1024 || certificates.size() + read > 2 * 1024 * 1024) return {};
-            certificates.append(buffer, read);
-        }
-        certificates += '\n';
-    }
-    return certificates;
-}
-#endif
 
 MiCatalogFetchError fetch(MiCatalogRequest* request, std::string& body, long& http) {
-    std::call_once(curlOnce, [] { curlInit = curl_global_init(CURL_GLOBAL_DEFAULT); });
-    if (curlInit != CURLE_OK) return MI_FETCH_NETWORK;
+    if (mi_curl_init() != CURLE_OK) return MI_FETCH_NETWORK;
     CURL* handle = curl_easy_init();
     if (!handle) return MI_FETCH_NETWORK;
     std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> handleOwner(handle, curl_easy_cleanup);
@@ -209,7 +178,7 @@ MiCatalogFetchError fetch(MiCatalogRequest* request, std::string& body, long& ht
     curl_easy_setopt(handle, CURLOPT_REDIR_PROTOCOLS, protocols);
 #pragma GCC diagnostic pop
 #ifdef __ANDROID__
-    std::string certificates = system_certificates();
+    std::string certificates = mi_system_certificates();
     if (certificates.empty()) return MI_FETCH_TLS;
     struct curl_blob roots = { &certificates[0], certificates.size(), CURL_BLOB_NOCOPY };
     curl_easy_setopt(handle, CURLOPT_CAINFO, static_cast<const char*>(nullptr));

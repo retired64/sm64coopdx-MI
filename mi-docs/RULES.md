@@ -1,5 +1,14 @@
 # Reglas de desarrollo y mantenimiento de SM64coopdx-MI
 
+> Estado local posterior — 2026-10-30: instalación Lua/ZIP y recibos schema 1
+> implementados y con funcionamiento confirmado por el usuario tras corregir
+> bloqueo y progreso. El usuario autorizó commit/push a mi-main. Las referencias históricas
+> a Instalar deshabilitado quedan superadas por [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md).
+> Reemplazo/actualizaciones de mods, asociaciones previas y RAR/7z siguen pendientes.
+> El usuario confirmó funcionamiento del APK CI anterior; el instalador nuevo
+> requiere su propia prueba física.
+
+
 Referencia: 2026-10-29. Este documento debe leerse antes de modificar o sincronizar
 el fork. Procedimiento operativo: [MANTENER-UPDATES.md](MANTENER-UPDATES.md).
 Las instrucciones explícitas del propietario y las reglas aplicables del entorno
@@ -499,3 +508,16 @@ de asumir dónde está rootProject. CI debe comprobar tareas antes del make del 
 subió el APK. El resultado remoto no acredita una descarga contrastada localmente
 ni pruebas físicas; la descarga se detuvo por petición del usuario. Registrar
 ambos niveles por separado y conservar el SHA del código realmente probado.
+
+
+## Instalador MI local — puntos de contacto nuevos
+
+Contrato e inventario: [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md).
+Nuevos mi_install.cpp/.h, mi_network.h y mi_sha256.h en src/pc/mod_integrations;
+nuevos tests/mi/install_cli.cpp y tools/mi/test_install.py. Modificados parser/DTO,
+request TLS compartido, detalles DJUI, idiomas/generado y tests de catálogo.
+Sin cambios al escáner, activación, importador original ni carga inicial.
+En cada sync revisar semántica de fs_writepath, fcntl/renameat2, miniz/curl,
+manifest/recibos, lifetime y callbacks DJUI. No basta resolver conflictos textuales.
+Añadir prueba Lua/ZIP/cancelación/recuperación y detección mediante Refrescar.
+No promover esta implementación antes de completar pruebas locales autorizadas.

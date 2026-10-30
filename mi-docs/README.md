@@ -26,6 +26,9 @@ La documentación heredada del juego permanece en sus rutas originales.
 
 ## Integración vigente
 
+- [CATALOG_INSTALLATION.md](CATALOG_INSTALLATION.md): instalación Lua/ZIP, progreso,
+  recibos, recuperación, límites y pruebas locales.
+
 - [CATALOG_REMOTE.md](CATALOG_REMOTE.md): red, TLS, caché y ownership.
 - [CATALOG_ACCESSIBILITY.md](CATALOG_ACCESSIBILITY.md): tarjetas, accesibilidad
   y lectura actuales.

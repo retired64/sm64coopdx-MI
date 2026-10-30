@@ -13,6 +13,8 @@
 #include "mi_catalog_panel.h"
 #include "mi_catalog_strings.h"
 #include "mi_catalog_request.h"
+#include "mi_install.h"
+#include "pc/djui/djui_progress_bar.h"
 
 #define MI_PAGE_SIZE 4
 
@@ -153,12 +155,144 @@ static void mi_reading_width(struct DjuiBase* base, UNUSED bool* skip) {
     djui_base_set_padding(base, 0, inset, 0, inset);
 }
 
+struct MiInstallView {
+    struct MiCatalogFile* files;
+    size_t count, selected;
+    struct MiInstall* operation;
+    struct DjuiText* fileText;
+    struct DjuiText* status;
+    struct DjuiButton* install;
+    struct DjuiButton* back;
+    struct DjuiButton* previous;
+    struct DjuiButton* next;
+    struct DjuiProgressBar* bar;
+    struct DjuiProgressBar* pulse;
+    float progress, animation;
+    enum MiInstallState phase;
+};
+
+static bool mi_install_active(enum MiInstallState state) {
+    return state == MI_INSTALL_PENDING || state == MI_INSTALL_DOWNLOADING ||
+        state == MI_INSTALL_EXTRACTING || state == MI_INSTALL_VERIFYING ||
+        state == MI_INSTALL_COMMITTING || state == MI_INSTALL_CANCELLING;
+}
+
+static void mi_install_view_destroy(struct DjuiBase* base) {
+    struct MiInstallView* view = (struct MiInstallView*)(intptr_t)base->tag;
+    mi_install_close(view->operation);
+    free(view->files);
+    free(view);
+    free(base);
+}
+
+static struct MiInstallView* mi_install_view_for(struct DjuiBase* base) {
+    while (base && base->destroy != mi_install_view_destroy) base = base->parent;
+    return base ? (struct MiInstallView*)(intptr_t)base->tag : NULL;
+}
+
+static const char* mi_install_error_text(enum MiInstallError error) {
+    switch (error) {
+        case MI_INSTALL_NETWORK: return mi_catalog_text("INSTALL_NETWORK");
+        case MI_INSTALL_HTTP: return mi_catalog_text("INSTALL_HTTP");
+        case MI_INSTALL_TLS: return mi_catalog_text("TLS_ERROR");
+        case MI_INSTALL_STORAGE: return mi_catalog_text("INSTALL_STORAGE");
+        case MI_INSTALL_UNSAFE: return mi_catalog_text("INSTALL_UNSAFE");
+        case MI_INSTALL_LIMIT: return mi_catalog_text("INSTALL_LIMIT");
+        case MI_INSTALL_EXISTS: return mi_catalog_text("INSTALL_EXISTS");
+        case MI_INSTALL_BUSY: return mi_catalog_text("INSTALL_BUSY");
+        case MI_INSTALL_INTEGRITY: return mi_catalog_text("INSTALL_INTEGRITY");
+        case MI_INSTALL_RECOVERY: return mi_catalog_text("INSTALL_RECOVERY");
+        default: return mi_catalog_text("INSTALL_FORMAT");
+    }
+}
+
+static void mi_install_view_update(struct DjuiBase* base, UNUSED bool* skip) {
+    struct MiInstallView* view = mi_install_view_for(base);
+    struct MiInstallInfo info = {0};
+    bool hasOperation = mi_install_poll(view->operation, &info);
+    bool active = hasOperation && mi_install_active(info.state);
+    bool supported = view->count && view->files[view->selected].supported;
+    const char* message = mi_catalog_text(supported ? "INSTALL_READY" : "INSTALL_UNSUPPORTED");
+    if (hasOperation) {
+        switch (info.state) {
+            case MI_INSTALL_PENDING: message = mi_catalog_text("INSTALL_WAIT"); break;
+            case MI_INSTALL_DOWNLOADING: message = mi_catalog_text("INSTALL_DOWNLOAD"); break;
+            case MI_INSTALL_EXTRACTING: message = mi_catalog_text("INSTALL_EXTRACT"); break;
+            case MI_INSTALL_VERIFYING: message = mi_catalog_text("INSTALL_VERIFY"); break;
+            case MI_INSTALL_COMMITTING: message = mi_catalog_text("INSTALL_FINISH"); break;
+            case MI_INSTALL_CANCELLING: message = mi_catalog_text("INSTALL_CANCELLING"); break;
+            case MI_INSTALL_CANCELLED: message = mi_catalog_text("INSTALL_CANCELLED"); break;
+            case MI_INSTALL_COMPLETE: message = mi_catalog_text("INSTALL_DONE"); break;
+            case MI_INSTALL_FAILED: message = mi_install_error_text(info.error); break;
+        }
+    }
+    char status[1024];
+    if (active && info.progress >= 0) snprintf(status, sizeof(status), "%s (%u%%)", message, (unsigned)(fminf(1, fmaxf(0, info.progress)) * 100));
+    else if (hasOperation && info.error == MI_INSTALL_HTTP) snprintf(status, sizeof(status), "%s (HTTP %ld)", message, info.httpStatus);
+    else snprintf(status, sizeof(status), "%s", message);
+    size_t used = strlen(status);
+    const char* filename = view->count ? view->files[view->selected].filename : "";
+    if (active && info.state == MI_INSTALL_DOWNLOADING) {
+        if (info.total) snprintf(status + used, sizeof(status) - used, "\n%s | %.1f / %.1f KiB", filename, (double)info.bytes / 1024, (double)info.total / 1024);
+        else snprintf(status + used, sizeof(status) - used, "\n%s | %.1f KiB", filename, (double)info.bytes / 1024);
+    } else if (hasOperation && info.state == MI_INSTALL_COMPLETE) {
+        snprintf(status + used, sizeof(status) - used, "\nmods/%s", info.destination);
+    } else if (active) snprintf(status + used, sizeof(status) - used, "\n%s", filename);
+    djui_text_set_text(view->status, status);
+    djui_base_set_enabled(&view->install->base, !active && supported && !(hasOperation && info.state == MI_INSTALL_COMPLETE));
+    djui_base_set_enabled(&view->previous->base, !active && view->selected > 0);
+    djui_base_set_enabled(&view->next->base, !active && view->selected + 1 < view->count);
+    djui_text_set_text(view->back->text, active ? mi_catalog_text("INSTALL_CANCEL") : DLANG(MENU, BACK));
+    djui_base_set_enabled(&view->back->base, !active || (info.state != MI_INSTALL_COMMITTING && info.state != MI_INSTALL_CANCELLING));
+    djui_base_set_visible(&view->bar->base, active && info.progress >= 0);
+    djui_base_set_visible(&view->pulse->base, active && info.progress < 0);
+    if (hasOperation && info.state != view->phase) { view->bar->smoothValue = 0; view->phase = info.state; }
+    view->progress = fminf(1, fmaxf(0, info.progress));
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    view->animation = (float)(now.tv_sec % 2) * 0.5f + (float)now.tv_nsec / 2000000000.0f;
+}
+
+static bool mi_install_view_back(struct DjuiBase* base) {
+    struct MiInstallView* view = mi_install_view_for(base);
+    struct MiInstallInfo info;
+    if (mi_install_poll(view->operation, &info) && mi_install_active(info.state)) {
+        mi_install_cancel(view->operation);
+        return true;
+    }
+    return false;
+}
+
+static void mi_install_choose(struct DjuiBase* caller) {
+    struct MiInstallView* view = mi_install_view_for(caller);
+    if (!view || !view->count) return;
+    struct MiInstallInfo info;
+    if (mi_install_poll(view->operation, &info) && mi_install_active(info.state)) return;
+    mi_install_close(view->operation); view->operation = NULL;
+    if (caller == &view->previous->base && view->selected) view->selected--;
+    if (caller == &view->next->base && view->selected + 1 < view->count) view->selected++;
+    const struct MiCatalogFile* file = &view->files[view->selected];
+    char text[768];
+    snprintf(text, sizeof(text), "%zu / %zu | %s\n%s", view->selected + 1, view->count,
+        file->version[0] ? file->version : mi_catalog_text("UNKNOWN"), file->filename[0] ? file->filename : mi_catalog_text("UNKNOWN"));
+    djui_text_set_text(view->fileText, text);
+}
+
+static void mi_install_begin(struct DjuiBase* caller) {
+    struct MiInstallView* view = mi_install_view_for(caller);
+    struct MiInstallInfo info;
+    if (!view || !view->count || (mi_install_poll(view->operation, &info) && mi_install_active(info.state))) return;
+    mi_install_close(view->operation);
+    view->operation = mi_install_start(fs_get_write_path(""), &view->files[view->selected]);
+    if (!view->operation) djui_text_set_text(view->status, mi_catalog_text("INSTALL_STORAGE"));
+}
+
 static void mi_details(struct DjuiBase* caller) {
     struct MiCatalogView* view = mi_view_for(caller);
     if (!view || caller->tag < 0) return;
     const struct MiCatalogEntry* entry = mi_catalog_entry(view->catalog, (size_t)caller->tag);
     if (!entry) return;
-    struct DjuiThreePanel* panel = mi_workspace(mi_catalog_text("DETAILS"), 56, 72);
+    struct DjuiThreePanel* panel = mi_workspace(mi_catalog_text("DETAILS"), 56, 200);
     struct DjuiBase* body = djui_three_panel_get_body(panel);
     body->on_render_pre = mi_reading_width;
     struct DjuiText* title = mi_text(body, entry->title, 72);
@@ -169,15 +303,52 @@ static void mi_details(struct DjuiBase* caller) {
     mi_field(body, mi_catalog_text("CATEGORY"), entry->category);
     struct DjuiText* description = mi_text(body, entry->description[0] ? entry->description : mi_catalog_text("NO_DESCRIPTION"), 160);
     description->base.on_render_pre = mi_description_fit;
-    struct DjuiText* pending = mi_text(body, mi_catalog_text("INSTALL_PENDING"), 56);
-    pending->base.on_render_pre = mi_description_fit;
-    struct DjuiButton* install = djui_button_right_create(djui_three_panel_get_footer(panel), mi_catalog_text("INSTALL"), DJUI_BUTTON_STYLE_NORMAL, NULL);
-    djui_base_set_size(&install->base, 0.485f, 64);
-    djui_base_set_enabled(&install->base, false);
+    struct MiInstallView* detail = calloc(1, sizeof(*detail));
+    if (!detail) { djui_base_destroy(&panel->base); return; }
+    detail->count = mi_catalog_file_count(view->catalog, (size_t)caller->tag);
+    detail->files = calloc(detail->count, sizeof(*detail->files));
+    if (detail->count && !detail->files) { free(detail); djui_base_destroy(&panel->base); return; }
+    for (size_t i = 0; i < detail->count; i++) {
+        detail->files[i] = *mi_catalog_file(view->catalog, (size_t)caller->tag, i);
+    }
+    bool chosen = false;
+    for (size_t i = 0; i < detail->count; i++) if (detail->files[i].supported &&
+        (!chosen || detail->files[i].recommended)) { detail->selected = i; chosen = true; if (detail->files[i].recommended) break; }
+    panel->base.tag = (intptr_t)detail;
+    panel->base.destroy = mi_install_view_destroy;
+    panel->base.on_render_pre = mi_install_view_update;
+    panel->on_back = mi_install_view_back;
+    detail->fileText = mi_text(body, "", 80);
+    detail->fileText->base.on_render_pre = mi_description_fit;
+    struct DjuiRect* choices = djui_rect_container_create(body, 64);
+    detail->previous = djui_button_left_create(&choices->base, mi_catalog_text("PREVIOUS_FILE"), DJUI_BUTTON_STYLE_NORMAL, mi_install_choose);
+    detail->next = djui_button_right_create(&choices->base, mi_catalog_text("NEXT_FILE"), DJUI_BUTTON_STYLE_NORMAL, mi_install_choose);
+    mi_place(&detail->previous->base, 0, 0, 0.485f, 64);
+    /* mi_place uses offsets from the left; right_create instead interprets x
+     * as an inset from the right and would overlap the previous button. */
+    djui_base_set_alignment(&detail->next->base, DJUI_HALIGN_LEFT, DJUI_VALIGN_TOP);
+    mi_place(&detail->next->base, 0.515f, 0, 0.485f, 64);
+    detail->previous->text->base.on_render_pre = mi_action_label_fit;
+    detail->next->text->base.on_render_pre = mi_action_label_fit;
+    struct DjuiBase* footer = djui_three_panel_get_footer(panel);
+    struct DjuiButton* install = djui_button_right_create(footer, mi_catalog_text("INSTALL"), DJUI_BUTTON_STYLE_NORMAL, mi_install_begin);
+    djui_base_set_alignment(&install->base, DJUI_HALIGN_LEFT, DJUI_VALIGN_TOP);
+    mi_place(&install->base, 0.515f, 0, 0.485f, 64);
     install->text->base.on_render_pre = mi_action_label_fit;
-    struct DjuiButton* back = djui_button_left_create(djui_three_panel_get_footer(panel), DLANG(MENU, BACK), DJUI_BUTTON_STYLE_BACK, djui_panel_menu_back);
-    djui_base_set_size(&back->base, 0.485f, 64);
+    struct DjuiButton* back = djui_button_left_create(footer, DLANG(MENU, BACK), DJUI_BUTTON_STYLE_BACK, djui_panel_menu_back);
+    mi_place(&back->base, 0, 0, 0.485f, 64);
     back->text->base.on_render_pre = mi_action_label_fit;
+    detail->install = install; detail->back = back;
+    /* Keep operation/error/result visible even when the description is scrolled. */
+    detail->status = mi_text(footer, "", 88);
+    mi_place(&detail->status->base, 0, 104, 1, 88);
+    detail->status->base.on_render_pre = mi_action_label_fit;
+    detail->bar = djui_progress_bar_create(footer, &detail->progress, 0, 1, false);
+    detail->pulse = djui_progress_bar_create(footer, &detail->animation, 0, 1, true);
+    mi_place(&detail->bar->base, 0, 76, 1, 20);
+    mi_place(&detail->pulse->base, 0, 76, 1, 20);
+    mi_install_choose(&install->base);
+    mi_install_view_update(&panel->base, NULL);
     /* DJUI copies text. No borrowed DTO or catalog pointers in the detail panel. */
     if (!djui_panel_add(caller, panel, &back->base)) djui_base_destroy(&panel->base);
 }
