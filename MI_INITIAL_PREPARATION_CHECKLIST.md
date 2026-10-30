@@ -354,3 +354,73 @@ Instalación y actualización de mods continúan pendientes.
 
 APK: build/us_pc/sm64coopdx.apk (120138041 bytes).
 SHA-256: 117ad63202cfd2c396679e331403231b64b4fe8593cdce7c632d1b8ff1c8961d.
+
+
+## Diseño amplio del catálogo — 2026-10-29
+
+- [x] Catálogo y detalles al 96 % del ancho; navegación fuera del cuerpo desplazable.
+- [x] Filas legibles con autor/categoría y capacidad según altura/escala DJUI.
+- [x] Acceso al catálogo en cabecera derecha de Mods; flechas conservadas.
+- [x] Anterior/siguiente EN/ES/PT y respaldo nativo generado.
+- [ ] Validación física del diseño, teclado, táctil, mando y temas.
+
+Detalles: [docs/mi/CATALOG_WORKSPACE.md](docs/mi/CATALOG_WORKSPACE.md).
+
+
+Validación registrada: pruebas de parser, idiomas y geometría correctas;
+generador sin diferencias; APK Termux compilado y verificado (firma, alineación
+4 KiB, CRC y libmain coincidente). No se ejecutó Gradle. Prueba física pendiente.
+APK: build/us_pc/sm64coopdx.apk, 120154425 bytes.
+SHA-256: 6db65de2ac6df1aa598bd45d8addc4813fe034b710a3c2f44f5fc60939a7d870.
+
+
+## Tarjetas y accesibilidad visual — 2026-10-29
+
+- [x] Cuadrícula adaptable 2x2, con una columna cuando falta ancho.
+- [x] Título, autor, categoría y contador mayores; escala DJUI respetada.
+- [x] Detalles alineados arriba, mayor texto y ancho de lectura limitado.
+- [x] Buscar mods EN/ES/PT con fallback para idiomas externos antiguos.
+- [ ] Prueba física de esta iteración con táctil, mando, teclado y escala grande.
+
+Diseño actual: [docs/mi/CATALOG_ACCESSIBILITY.md](docs/mi/CATALOG_ACCESSIBILITY.md).
+
+
+APK de esta iteración compilado con Makefile Termux; firma, alineación 4 KiB,
+CRC ZIP y coincidencia de libmain correctos. Generador y git diff --check correctos.
+No se ejecutó Gradle. Prueba física pendiente.
+APK: build/us_pc/sm64coopdx.apk, 120158521 bytes.
+SHA-256: 4e221f79ca1d537d25bfcc8f779624d09ae337a1c0d18c87ac4487ed0a2a4253.
+
+
+## Plan futuro: migración del catálogo JSON — 2026-10-29
+
+- [x] Intención registrada: reducir principalmente tamaño, sin un problema actual
+  de fluidez percibida; .db/SQLite es candidato, todavía no formato decidido.
+- [x] Flujo actual documentado: JSON completo remoto, copia local válida de
+  15 minutos, refresco manual, respaldo y búsqueda/paginación locales.
+- [ ] Medir con el mismo catálogo: JSON, transferencia comprimida, publicación
+  reducida para el juego y SQLite; bytes transferidos/almacenados, apertura y RAM.
+- [ ] Definir formato/esquema con base en esas mediciones y consultas Android.
+- [ ] Decidir si el scraper conserva JSON canónico y genera un artefacto adicional.
+- [ ] Preservar identidades, idiomas y datos de instalación/asociación/actualización.
+- [ ] Versionar publicación y validar tamaño/hash, estructura e integridad antes
+  de adoptar el nuevo catálogo; mantener HTTPS y carga fuera del hilo UI.
+- [ ] Conservar reemplazo atómico, último respaldo válido y funcionamiento offline.
+- [ ] Planear transición de caché JSON y compatibilidad con clientes anteriores.
+- [ ] Adaptar la fuente de datos conservando el contrato del menú y validar en
+  teléfono: primer inicio, actualización, fallo, recuperación, búsqueda y paginación.
+- [ ] Evaluar incrementos del catálogo como mejora separada y posterior.
+
+Todos los puntos pendientes son planificación, no funcionalidades implementadas.
+No cambia el JSON actual ni bloquea el MVP de instalación. El detalle de la
+decisión queda en la sección 25 de
+[SM64CDPY_IDEAS_Y_FORK.md](SM64CDPY_IDEAS_Y_FORK.md).
+
+
+### Confirmación del usuario — 2026-10-29
+
+El usuario confirma que la nueva visualización funcionó a la perfección y
+resultó muy accesible en su teléfono. Se registra aceptación general del diseño
+de tarjetas y lectura. No se presume cobertura individual de toda la matriz
+de mando, teclado, idiomas, temas y estados de red. Las notas anteriores de
+prueba física pendiente reflejan el estado previo a esta confirmación.

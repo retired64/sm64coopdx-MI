@@ -1191,3 +1191,85 @@ completar el flujo de instalación con resultado real y recibos. No se duplica
 la pantalla de activación.
 
 Detalles y pruebas pendientes: [docs/mi/CATALOG_REMOTE.md](docs/mi/CATALOG_REMOTE.md).
+
+
+## 23. Catálogo como pantalla amplia — 2026-10-29
+
+Se aprovecha el espacio del dispositivo con cabecera y pie fijos, filas con
+metadata y detalles amplios. La capacidad por página responde a la altura
+DJUI disponible; no se altera la escala del usuario. Explorar mods se traslada
+a la cabecera derecha del menú local. Se conservan sus flechas y motor local.
+
+Diseño y matriz física pendiente: [docs/mi/CATALOG_WORKSPACE.md](docs/mi/CATALOG_WORKSPACE.md).
+
+
+## 24. Revisión de capturas: accesibilidad visual
+
+Se priorizan cuatro tarjetas grandes en cuadrícula 2x2, una columna si la escala
+reduce el ancho útil, texto mayor y detalle alineado arriba. La escala DJUI se
+respeta sin reducir títulos automáticamente por falta de altura. Se mantiene
+la navegación nativa y el control local del juego.
+
+Arquitectura y validación: [docs/mi/CATALOG_ACCESSIBILITY.md](docs/mi/CATALOG_ACCESSIBILITY.md).
+
+
+## 25. Migración futura del formato del catálogo — 2026-10-29
+
+El usuario quiere reducir el peso del catálogo y contempla sustituir el JSON
+por un archivo .db u otro formato. El motivo principal es tamaño de descarga
+y almacenamiento; el funcionamiento actual ya se percibe rápido. Esta decisión
+se registra como trabajo futuro: no cambia el formato, endpoint ni código actual.
+
+### Flujo vigente como punto de partida
+
+El catálogo de producción no está empaquetado en el APK. Explorar mods obtiene
+el JSON completo por HTTPS desde el repositorio sm64cdpy.releases, valida su
+estructura y guarda una copia local con respaldo. Una copia de menos de 15 minutos
+se reutiliza; Actualizar catálogo fuerza la consulta. Si hay copia válida se
+conserva ante errores de red o publicación. Búsqueda y paginación son locales,
+sin solicitudes por tarjeta o página. Descargar catálogo no descarga los mods.
+La muestra sintética del proyecto es material de regresión, no la fuente de la
+pantalla actual. La consulta verificada tenía 1307 mods y aproximadamente 6,2 MB;
+son cifras históricas, no límites del catálogo futuro.
+
+### Opciones a evaluar, sin asumir una reducción automática
+
+La extensión .db por sí sola no reduce peso. SQLite es un candidato por sus
+consultas e índices locales, pero el tamaño depende del esquema, textos e índices.
+Comparar con datos equivalentes: JSON actual, JSON comprimido para transferencia,
+una publicación que excluya campos innecesarios para el juego y SQLite, tanto
+en tamaño de transferencia como en tamaño almacenado, tiempo de apertura y RAM.
+Medir también búsqueda y paginación en un teléfono Android representativo.
+Compresión de transferencia y formato local son decisiones independientes.
+
+Una posibilidad es conservar el JSON como salida canónica del scraper y generar
+automáticamente un artefacto optimizado para el juego. También se puede migrar
+la fuente si resulta conveniente; todavía no se elige esquema ni tecnología.
+Las actualizaciones incrementales del catálogo son otra mejora posterior, con
+mayor complejidad; no confundirlas con actualizar los archivos de los mods.
+
+### Condiciones para una migración mantenible
+
+Preservar IDs de mods/versiones/archivos, descripciones e idiomas y metadatos
+necesarios para descargar, instalar, asociar y actualizar. Adaptar el acceso a
+datos manteniendo el contrato de presentación del menú para evitar rehacer la UI.
+Versionar formato y esquema; publicar metadatos de versión, tamaño y hash del
+artefacto para verificarlo antes de reemplazar la copia local. Mantener HTTPS,
+validación, trabajo fuera del hilo UI, reemplazo atómico y último respaldo válido.
+Planear transición desde la caché JSON y convivencia temporal con clientes antiguos.
+Si se elige SQLite, abrir el catálogo externo como datos de solo lectura y validar
+esquema/integridad antes de adoptarlo. No ejecutar migraciones provenientes del
+contenido descargado.
+
+El cambio debe mantener la experiencia sin conexión y no duplicar activación o
+lectura de mods locales del juego. Se realizará cuando corresponda en el roadmap;
+no bloquea continuar el MVP de instalación con el catálogo JSON vigente.
+
+
+### Confirmación del usuario — 2026-10-29
+
+El usuario confirma que la nueva visualización funcionó a la perfección y
+resultó muy accesible en su teléfono. Se registra aceptación general del diseño
+de tarjetas y lectura. No se presume cobertura individual de toda la matriz
+de mando, teclado, idiomas, temas y estados de red. Las notas anteriores de
+prueba física pendiente reflejan el estado previo a esta confirmación.

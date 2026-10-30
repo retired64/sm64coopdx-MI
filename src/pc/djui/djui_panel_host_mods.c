@@ -30,6 +30,16 @@ static struct DjuiButton* sRefreshButton = NULL;
 static struct DjuiInputbox* sSearchInputbox = NULL;
 static unsigned int sSelectedCategory = MOD_CATEGORY_ALL;
 static bool sWarned = false;
+static struct DjuiThreePanel* sHostModsPanel = NULL;
+static struct DjuiButton* sCatalogButton = NULL;
+static void djui_mod_catalog_open(struct DjuiBase* caller);
+
+static void djui_mod_catalog_entry_layout(UNUSED struct DjuiBase* base, UNUSED bool* skip) {
+    if (!sCatalogButton || !sHostModsPanel) return;
+    bool active = sHostModsPanel->base.visible && sHostModsPanel->base.enabled && gNetworkType == NT_NONE;
+    djui_base_set_visible(&sCatalogButton->base, active);
+    djui_base_set_enabled(&sCatalogButton->base, active && !gDjuiPanelDisableBack);
+}
 
 struct ThreadHandle gModRefreshThread = { 0 };
 
@@ -80,6 +90,10 @@ static void djui_panel_host_mods_description_create(void) {
         djui_text_set_drop_shadow(description, 64, 64, 64, 100);
         sTooltip = description;
     }
+    struct DjuiBase* header = djui_three_panel_get_header(panel);
+    sCatalogButton = djui_button_right_create(header, mi_catalog_text("TITLE"), DJUI_BUTTON_STYLE_NORMAL, djui_mod_catalog_open);
+    djui_base_set_size(&sCatalogButton->base, 1, 48);
+    panel->base.on_render_pre = djui_mod_catalog_entry_layout;
     sDescriptionPanel = panel;
 }
 
@@ -135,6 +149,8 @@ static void djui_panel_host_mods_destroy(struct DjuiBase* base) {
     }
     sModLayout = NULL;
     sTooltip = NULL;
+    sHostModsPanel = NULL;
+    sCatalogButton = NULL;
 }
 
 void djui_panel_host_mods_add_mods(struct DjuiBase* layoutBase) {
@@ -248,6 +264,7 @@ void djui_panel_host_mods_create(struct DjuiBase* caller) {
 
     struct DjuiThreePanel* panel = djui_panel_menu_create(DLANG(HOST_MODS, MODS), true);
 
+    sHostModsPanel = panel;
     struct DjuiBase* body = djui_three_panel_get_body(panel);
     {
         struct DjuiSearchbox* searchbox = djui_searchbox_create(body, djui_panel_rebuild_mods_list);
@@ -275,10 +292,8 @@ void djui_panel_host_mods_create(struct DjuiBase* caller) {
                 djui_base_set_size(&sBackButton->base, 0.485f, 45);
                 djui_base_set_size(&sRefreshButton->base, 0.485f, 45);
 
-                struct DjuiButton* button1 = djui_button_left_create(&rect2->base, mi_catalog_text("TITLE"), DJUI_BUTTON_STYLE_NORMAL, djui_mod_catalog_open);
-                struct DjuiButton* button2 = djui_button_right_create(&rect2->base, DLANG(HOST_MODS, OPEN_MOD_FOLDER), DJUI_BUTTON_STYLE_NORMAL, djui_mod_folder_open);
-                djui_base_set_size(&button1->base, 0.485f, 45);
-                djui_base_set_size(&button2->base, 0.485f, 45);
+                struct DjuiButton* button2 = djui_button_create(&rect2->base, DLANG(HOST_MODS, OPEN_MOD_FOLDER), DJUI_BUTTON_STYLE_NORMAL, djui_mod_folder_open);
+                djui_base_set_size(&button2->base, 1, 45);
             }
         } else {
             djui_button_create(body, DLANG(MENU, BACK), DJUI_BUTTON_STYLE_BACK, djui_panel_menu_back);

@@ -13,11 +13,14 @@ char* djui_language_get(const char* section, const char* key) {
 
 int main(void) {
     assert(strcmp(mi_catalog_text("TITLE"), "Explore mods") == 0);
+    assert(strcmp(mi_catalog_text("SEARCH"), "Search mods") == 0);
     strcpy(configLanguage, "Spanish");
     assert(strcmp(mi_catalog_text("TITLE"), "Explorar mods") == 0);
     assert(strcmp(mi_catalog_text("DETAILS"), "Detalles del mod") == 0);
+    assert(strcmp(mi_catalog_text("SEARCH"), "Buscar mods") == 0);
     strcpy(configLanguage, "Portuguese");
     assert(strcmp(mi_catalog_text("DETAILS"), "Detalhes do mod") == 0);
+    assert(strcmp(mi_catalog_text("SEARCH"), "Buscar mods") == 0);
     strcpy(configLanguage, "French");
     assert(strcmp(mi_catalog_text("TITLE"), "Explore mods") == 0);
     customTranslation = 1;

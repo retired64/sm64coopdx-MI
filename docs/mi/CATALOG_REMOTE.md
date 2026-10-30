@@ -89,3 +89,10 @@ No se ejecutó Gradle ni se publicó release. Prueba física remota pendiente.
 
 APK: build/us_pc/sm64coopdx.apk — 120138041 bytes.
 SHA-256: 117ad63202cfd2c396679e331403231b64b4fe8593cdce7c632d1b8ff1c8961d.
+
+
+### Presentación actual
+
+El catálogo remoto usa ahora un espacio amplio, navegación fija y filas por
+página adaptadas a la altura. Véase [CATALOG_WORKSPACE.md](CATALOG_WORKSPACE.md).
+El servicio de red, la caché y las reglas de instalación no cambian.
