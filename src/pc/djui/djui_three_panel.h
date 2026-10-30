@@ -6,6 +6,13 @@ struct DjuiThreePanel {
     struct DjuiScreenValue minHeaderSize;
     struct DjuiScreenValue bodySize;
     struct DjuiScreenValue minFooterSize;
+    bool scrollable;
+    f32 scrollOffset;
+    f32 scrollMax;
+    f32 contentHeight;
+    struct DjuiRect* scrollControls;
+    struct DjuiButton* scrollUp;
+    struct DjuiButton* scrollDown;
     bool temporary;
     bool (*on_back)(struct DjuiBase*);
 };
@@ -23,3 +30,7 @@ void djui_three_panel_set_min_footer_size(struct DjuiThreePanel* threePanel, f32
 void djui_three_panel_recalculate_body_size(struct DjuiThreePanel* threePanel);
 
 struct DjuiThreePanel* djui_three_panel_create(struct DjuiBase* parent, f32 minHeaderSize, f32 bodySize, f32 minFooterSize);
+
+/* Standard menu overflow navigation; custom three-panels opt out by default. */
+bool djui_three_panel_scroll_from(struct DjuiBase* descendant, f32 amount);
+void djui_three_panel_reveal(struct DjuiBase* descendant);

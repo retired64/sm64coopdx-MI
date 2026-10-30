@@ -56,6 +56,7 @@ static void djui_cursor_base_hover_location(struct DjuiBase* base, f32* x, f32* 
 void djui_cursor_input_controlled_center(struct DjuiBase* base) {
     if (!sCursorMouseControlled && (!base || (base && base->interactable && base->interactable->enabled))) {
         sInputControlledBase = base;
+        if (base) djui_three_panel_reveal(base);
         djui_cursor_set_visible(base != NULL);
     }
 }

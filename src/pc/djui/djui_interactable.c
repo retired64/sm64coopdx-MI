@@ -353,10 +353,13 @@ void djui_interactable_on_text_editing(char* text, int cursorPos) {
 }
 
 void djui_interactable_on_scroll(float x, float y) {
-    if (gInteractableFocus == NULL) { return; }
-    if (gInteractableFocus->interactable == NULL) { return; }
-    if (gInteractableFocus->interactable->on_scroll == NULL) { return; }
-    gInteractableFocus->interactable->on_scroll(gInteractableFocus, x, y);
+    if (gInteractableFocus && gInteractableFocus->interactable &&
+        gInteractableFocus->interactable->on_scroll) {
+        gInteractableFocus->interactable->on_scroll(gInteractableFocus, x, y);
+        return;
+    }
+    /* Preserve control-specific wheel behavior, otherwise scroll its menu. */
+    djui_three_panel_scroll_from(gDjuiHovered ? gDjuiHovered : gInteractableFocus, -y * 48);
 }
 
 void djui_interactable_update_pad(void) {

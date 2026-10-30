@@ -13,6 +13,8 @@
 #include "djui_panel_host_mods.h"
 #include "djui_panel_pause.h"
 #include "pc/thread.h"
+#include "pc/mod_integrations/mi_catalog_panel.h"
+#include "pc/mod_integrations/mi_catalog_strings.h"
 
 #define DJUI_MOD_PANEL_WIDTH (410.0f + (16 * 2.0f))
 #define MOD_CATEGORY_ALL 0
@@ -224,8 +226,15 @@ static void djui_panel_menu_refresh(UNUSED struct DjuiBase* base) {
     }
 }
 
-static void djui_mod_website_open(UNUSED struct DjuiBase* caller) {
-    open_url("https://mods.sm64coopdx.com/mods/");
+static void djui_mod_catalog_closed(UNUSED struct DjuiBase* caller) {
+    if (sDescriptionPanel) djui_base_set_visible(&sDescriptionPanel->base, true);
+}
+
+static void djui_mod_catalog_open(struct DjuiBase* caller) {
+    struct DjuiPanel* panel = mi_catalog_panel_create(caller);
+    if (!panel) return;
+    if (sDescriptionPanel) djui_base_set_visible(&sDescriptionPanel->base, false);
+    panel->on_panel_destroy = djui_mod_catalog_closed;
 }
 
 static void djui_mod_folder_open(UNUSED struct DjuiBase* caller) {
@@ -266,7 +275,7 @@ void djui_panel_host_mods_create(struct DjuiBase* caller) {
                 djui_base_set_size(&sBackButton->base, 0.485f, 45);
                 djui_base_set_size(&sRefreshButton->base, 0.485f, 45);
 
-                struct DjuiButton* button1 = djui_button_left_create(&rect2->base, DLANG(HOST_MODS, BROWSE_MODS), DJUI_BUTTON_STYLE_NORMAL, djui_mod_website_open);
+                struct DjuiButton* button1 = djui_button_left_create(&rect2->base, mi_catalog_text("TITLE"), DJUI_BUTTON_STYLE_NORMAL, djui_mod_catalog_open);
                 struct DjuiButton* button2 = djui_button_right_create(&rect2->base, DLANG(HOST_MODS, OPEN_MOD_FOLDER), DJUI_BUTTON_STYLE_NORMAL, djui_mod_folder_open);
                 djui_base_set_size(&button1->base, 0.485f, 45);
                 djui_base_set_size(&button2->base, 0.485f, 45);

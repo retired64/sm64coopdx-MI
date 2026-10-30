@@ -102,5 +102,6 @@ struct DjuiThreePanel* djui_panel_menu_create(char* headerText, bool forcedLeftS
         djui_flow_layout_set_margin(body, 16);
         djui_flow_layout_set_flow_direction(body, DJUI_FLOW_DIR_DOWN);
     }
+    panel->scrollable = true;
     return panel;
 }

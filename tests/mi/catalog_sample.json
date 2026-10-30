@@ -1,0 +1,256 @@
+{
+  "schema_version": 2,
+  "catalog_id": "sha256:37811523b39267c476b6c3e7b34c3d44b1d243e930c8ee3794dac225ee2bb53e",
+  "catalog_status": "complete",
+  "generated_at": "2026-10-29T00:00:00Z",
+  "source": "https://example.invalid/mi",
+  "mod_count": 8,
+  "resolution_summary": {
+    "versions_total": 8,
+    "versions_resolved": 8,
+    "versions_unresolved": 0,
+    "mods_failed": 0
+  },
+  "mods": [
+    {
+      "id": "900001",
+      "name": "MI Sample Lua",
+      "author": "MI Fixture Team",
+      "category": "utility",
+      "description": "A standalone Lua sample for the upcoming installer. This preview does not install files.",
+      "version": "1.0",
+      "url": "https://example.invalid/mi/1",
+      "versions": [
+        {
+          "version_id": "mi-sample-v1",
+          "version": "1.0",
+          "resolved": true,
+          "files": [
+            {
+              "file_id": "mi-sample-f1",
+              "filename": "mi-sample.lua",
+              "download_url": "https://example.invalid/mi/1/file",
+              "source_url": "https://example.invalid/mi/1/file",
+              "display_name": "Sample file",
+              "role": "primary",
+              "recommended": true,
+              "requires_primary": false,
+              "requested_url": "https://example.invalid/mi/1/file",
+              "final_url": "https://example.invalid/mi/1/file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "900002",
+      "name": "MI Sample Moveset",
+      "author": "MI Fixture Team",
+      "category": "moveset",
+      "description": "A folder-based sample. The game keeps its existing mod selection controls.",
+      "version": "1.0",
+      "url": "https://example.invalid/mi/2",
+      "versions": [
+        {
+          "version_id": "mi-sample-v2",
+          "version": "1.0",
+          "resolved": true,
+          "files": [
+            {
+              "file_id": "mi-sample-f2",
+              "filename": "mi-sample.zip",
+              "download_url": "https://example.invalid/mi/2/file",
+              "source_url": "https://example.invalid/mi/2/file",
+              "display_name": "Sample file",
+              "role": "primary",
+              "recommended": true,
+              "requires_primary": false,
+              "requested_url": "https://example.invalid/mi/2/file",
+              "final_url": "https://example.invalid/mi/2/file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "900003",
+      "name": "MI Sample Graphics",
+      "author": "MI Fixture Team",
+      "category": "graphics",
+      "description": "A graphics package example for checking catalog search and navigation.",
+      "version": "1.0",
+      "url": "https://example.invalid/mi/3",
+      "versions": [
+        {
+          "version_id": "mi-sample-v3",
+          "version": "1.0",
+          "resolved": true,
+          "files": [
+            {
+              "file_id": "mi-sample-f3",
+              "filename": "mi-sample.zip",
+              "download_url": "https://example.invalid/mi/3/file",
+              "source_url": "https://example.invalid/mi/3/file",
+              "display_name": "Sample file",
+              "role": "primary",
+              "recommended": true,
+              "requires_primary": false,
+              "requested_url": "https://example.invalid/mi/3/file",
+              "final_url": "https://example.invalid/mi/3/file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "900004",
+      "name": "MI Sample Character",
+      "author": "MI Fixture Team",
+      "category": "character",
+      "description": "A character package example. No game files are changed by this screen.",
+      "version": "1.0",
+      "url": "https://example.invalid/mi/4",
+      "versions": [
+        {
+          "version_id": "mi-sample-v4",
+          "version": "1.0",
+          "resolved": true,
+          "files": [
+            {
+              "file_id": "mi-sample-f4",
+              "filename": "mi-sample.zip",
+              "download_url": "https://example.invalid/mi/4/file",
+              "source_url": "https://example.invalid/mi/4/file",
+              "display_name": "Sample file",
+              "role": "primary",
+              "recommended": true,
+              "requires_primary": false,
+              "requested_url": "https://example.invalid/mi/4/file",
+              "final_url": "https://example.invalid/mi/4/file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "900005",
+      "name": "MI Sample Audio",
+      "author": "MI Fixture Team",
+      "category": "audio",
+      "description": "An audio package example for the sample catalog.",
+      "version": "1.0",
+      "url": "https://example.invalid/mi/5",
+      "versions": [
+        {
+          "version_id": "mi-sample-v5",
+          "version": "1.0",
+          "resolved": true,
+          "files": [
+            {
+              "file_id": "mi-sample-f5",
+              "filename": "mi-sample.zip",
+              "download_url": "https://example.invalid/mi/5/file",
+              "source_url": "https://example.invalid/mi/5/file",
+              "display_name": "Sample file",
+              "role": "primary",
+              "recommended": true,
+              "requires_primary": false,
+              "requested_url": "https://example.invalid/mi/5/file",
+              "final_url": "https://example.invalid/mi/5/file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "900006",
+      "name": "MI Sample Gameplay",
+      "author": "MI Fixture Team",
+      "category": "gamemode",
+      "description": "A game mode example on the second catalog page.",
+      "version": "1.0",
+      "url": "https://example.invalid/mi/6",
+      "versions": [
+        {
+          "version_id": "mi-sample-v6",
+          "version": "1.0",
+          "resolved": true,
+          "files": [
+            {
+              "file_id": "mi-sample-f6",
+              "filename": "mi-sample.zip",
+              "download_url": "https://example.invalid/mi/6/file",
+              "source_url": "https://example.invalid/mi/6/file",
+              "display_name": "Sample file",
+              "role": "primary",
+              "recommended": true,
+              "requires_primary": false,
+              "requested_url": "https://example.invalid/mi/6/file",
+              "final_url": "https://example.invalid/mi/6/file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "900007",
+      "name": "MI Sample Quality of Life",
+      "author": "MI Fixture Team",
+      "category": "qol",
+      "description": "A quality-of-life example. Search by title, author, category or description.",
+      "version": "1.0",
+      "url": "https://example.invalid/mi/7",
+      "versions": [
+        {
+          "version_id": "mi-sample-v7",
+          "version": "1.0",
+          "resolved": true,
+          "files": [
+            {
+              "file_id": "mi-sample-f7",
+              "filename": "mi-sample.zip",
+              "download_url": "https://example.invalid/mi/7/file",
+              "source_url": "https://example.invalid/mi/7/file",
+              "display_name": "Sample file",
+              "role": "primary",
+              "recommended": true,
+              "requires_primary": false,
+              "requested_url": "https://example.invalid/mi/7/file",
+              "final_url": "https://example.invalid/mi/7/file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "900008",
+      "name": "MI Sample Tools",
+      "author": "MI Fixture Team",
+      "category": "utility",
+      "description": "Another utility example for testing filtering across pages.",
+      "version": "1.0",
+      "url": "https://example.invalid/mi/8",
+      "versions": [
+        {
+          "version_id": "mi-sample-v8",
+          "version": "1.0",
+          "resolved": true,
+          "files": [
+            {
+              "file_id": "mi-sample-f8",
+              "filename": "mi-sample.zip",
+              "download_url": "https://example.invalid/mi/8/file",
+              "source_url": "https://example.invalid/mi/8/file",
+              "display_name": "Sample file",
+              "role": "primary",
+              "recommended": true,
+              "requires_primary": false,
+              "requested_url": "https://example.invalid/mi/8/file",
+              "final_url": "https://example.invalid/mi/8/file"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
