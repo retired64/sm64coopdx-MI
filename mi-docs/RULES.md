@@ -462,3 +462,11 @@ Crear futuros planes, registros y guías dentro de esta carpeta y enlazarlos des
 [README.md](README.md). Las tablas históricas anteriores conservan los nombres
 y rutas que tenían los archivos en sus commits originales; sus enlaces llevan a
 la ubicación vigente. No mover documentación heredada del juego por esta regla.
+
+
+## 14. Herramienta de preparación por clon
+
+[tools/mi/configure_upstream.py](../tools/mi/configure_upstream.py) configura y
+audita remotos/seguimiento y valores locales con setup/check. No pertenece a los
+tres commits iniciales. Detalles: [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md).
+No confundir check offline con frescura remota ni configuración con integración.

@@ -49,6 +49,7 @@ de MI se centraliza en mi-docs/; AGENTS.md permanece en la raíz:
 | Ruta | Para qué se consulta |
 |---|---|
 | [RULES.md](mi-docs/RULES.md) | Contratos, revisión semántica, inventario de archivos y tres commits iniciales |
+| [UPSTREAM_SETUP.md](mi-docs/UPSTREAM_SETUP.md) | Configuración efectiva por clon y herramienta setup/check |
 | [MANTENER-UPDATES.md](mi-docs/MANTENER-UPDATES.md) | Upstream estable, ramas sync, conflictos, pruebas, promoción y recuperación |
 | [MI_INITIAL_PREPARATION_CHECKLIST.md](mi-docs/MI_INITIAL_PREPARATION_CHECKLIST.md) | Preparación, seguimiento, artefactos y pendientes reales |
 | [SM64CDPY_IDEAS_Y_FORK.md](mi-docs/SM64CDPY_IDEAS_Y_FORK.md) | Producto, decisiones e historial; secciones 15–16 mantenimiento, 25 formato futuro, 26 reglas operativas |
@@ -270,7 +271,11 @@ resultados reales. Compilar o una confirmación general no cubre toda la matriz.
 
 ## 12. Mantenimiento de upstream y prevención de fallos silenciosos
 
-Seguir MANTENER-UPDATES.md, no improvisar un pull sobre mi-main:
+Seguir MANTENER-UPDATES.md, no improvisar un pull sobre mi-main. Para un clon
+nuevo usar python tools/mi/configure_upstream.py setup; para auditar sin red ni
+mutaciones usar check. UPSTREAM_SETUP.md describe valores y alcance. La auditoría
+no certifica frescura remota ni integración; setup tampoco hace merge ni push:
+
 
 1. Inspeccionar remotos por clon y obtener referencias sin mezclar código.
 2. Registrar SHA upstream anterior/candidato y HEAD MI; crear rama sync aislada.

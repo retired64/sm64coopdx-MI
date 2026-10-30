@@ -27,19 +27,19 @@ publicar releases, subir assets ni sincronizar ramas de desarrollo experimentale
 - [x] Referencias remotas locales observadas: android, android-dev y newtouch.
 - [x] Wrapper presente: platform/gradlew y platform/gradle/wrapper/gradle-wrapper.jar.
 - [x] Workflow heredado inspeccionado: .github/workflows/build-coop.yaml.
-- [ ] Confirmar por fetch si la fuente remota avanzó; el SHA anterior describe la copia inspeccionada, no la última versión remota garantizada.
+- [x] Confirmar por fetch si la fuente remota avanzó; el SHA anterior describe la copia inspeccionada, no la última versión remota garantizada.
 
 ## 1. Remotos y ramas de mantenimiento
 
-- [ ] Añadir upstream apuntando a https://github.com/ManIsCat2/sm64coopdx.git.
-- [ ] Obtener referencias de upstream y comparar android con upstream/android.
-- [ ] Conservar android como espejo sin desarrollo propio de MI.
+- [x] Añadir upstream apuntando a https://github.com/ManIsCat2/sm64coopdx.git.
+- [x] Obtener referencias de upstream y comparar android con upstream/android.
+- [x] Conservar android como espejo sin desarrollo propio de MI.
 - [x] Crear mi-main desde el SHA de android elegido y registrado.
 - [x] Llevar este checklist a mi-main; pendiente de commit junto con el documento de ideas.
 - [ ] Crear ramas feature/mi-<tema> para funciones y sync/android-<fecha> para sincronizaciones.
 - [ ] Definir mi-main como rama principal del fork cuando esté preparada.
-- [ ] Documentar que android-dev, newtouch y ramas PC no son fuentes ordinarias de sincronización.
-- [ ] Acordar que ninguna sincronización fuerza el reemplazo de la historia de MI.
+- [x] Documentar que android-dev, newtouch y ramas PC no son fuentes ordinarias de sincronización.
+- [x] Acordar que ninguna sincronización fuerza el reemplazo de la historia de MI.
 
 Comandos orientativos; ejecutar según el estado real, no como bloque ciego:
 
@@ -432,7 +432,7 @@ prueba física pendiente reflejan el estado previo a esta confirmación.
   sincronización por SHA en rama aislada, revisión semántica, pruebas y promoción.
 - [x] [RULES.md](RULES.md): contratos, riesgos silenciosos, inventario e historial
   exacto de los tres commits publicados sobre Android estable.
-- [ ] Configurar upstream en este clon y comprobar la punta remota candidata.
+- [x] Configurar upstream en este clon y comprobar la punta remota candidata.
 - [ ] Configurar CI/protecciones y ejecutar una sincronización real probada.
 
 Crear la documentación no ejecuta esos pasos ni habilita actualizaciones de mods.
@@ -448,3 +448,17 @@ Crear la documentación no ejecuta esos pasos ni habilita actualizaciones de mod
 Documentación solamente: no configura upstream, CI, protección de ramas ni instala
 funcionalidades futuras. Revisar el estado efectivo por clon antes de afirmar
 que esos controles están habilitados.
+
+
+## Preparación real de upstream — 2026-10-29
+
+- [x] Configuración local aplicada y auditada; solo android estable en upstream.
+- [x] Fetch de ambos remotos y SHA estable confirmado; 0 commits upstream pendientes.
+- [x] Tracking MI/origin y espejo/upstream, push a origin y bloqueo local upstream.
+- [x] Pull ff-only; rerere con revisión explícita (autoupdate=false).
+- [x] Herramienta reproducible setup/check para futuros clones y checkpoint local.
+- [ ] Primera sincronización de motor cuando exista una punta estable nueva.
+
+Guía: [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md). Registro:
+[upstream/2026-10-29-setup.md](upstream/2026-10-29-setup.md).
+No se configuraron CI/protecciones GitHub ni se promovió un motor nuevo.

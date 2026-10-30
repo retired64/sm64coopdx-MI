@@ -1295,3 +1295,15 @@ y mantenimiento frente a Android estable. Enlaza los planes e historial existent
 sin reemplazarlos ni presentar funcionalidades pendientes como implementadas.
 Su creación no configura hooks, CI ni remotos; esos pasos mantienen su propio
 seguimiento y requieren comprobar su estado real.
+
+
+## 28. Upstream preparado efectivamente — 2026-10-29
+
+Se configura el clon con upstream/android estable, push predeterminado al fork,
+bloqueo local de push upstream, pull ff-only y rerere sin autoupdate. Se verifica
+por red que la estable continúa en 99c8d21ab: nuestra base ya la contiene y no
+requiere merge. Se mantiene mi-main en 76b961277 durante la preparación.
+
+[UPSTREAM_SETUP.md](UPSTREAM_SETUP.md) documenta el estado y la herramienta de
+configuración por clon; el [registro](upstream/2026-10-29-setup.md) distingue
+preparación de una sincronización real. CI y protecciones siguen pendientes.

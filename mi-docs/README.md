@@ -7,6 +7,9 @@ La documentación heredada del juego permanece en sus rutas originales.
 
 ## Reglas y mantenimiento
 
+- [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md): preparación efectiva y reproducible por clon.
+- [Registro inicial de upstream](upstream/2026-10-29-setup.md): SHAs y auditoría.
+
 - [RULES.md](RULES.md): contratos, errores silenciosos, inventario e historial de commits.
 - [MANTENER-UPDATES.md](MANTENER-UPDATES.md): actualización desde Android estable,
   resolución de conflictos, validación, promoción y recuperación.

@@ -8,13 +8,15 @@ Los comandos Git se ejecutan desde la raíz del repositorio, no desde mi-docs/.
 ## 1. Estado comprobado y objetivo
 
 - Base integrada: `99c8d21abe4d24649b508d0f216c4359ed5d2a7a`, de `android`.
-- Último commit MI al redactar: `02964f435e898c19c5831c2f9d9a10c20ccb1f10`.
+- HEAD MI al preparar upstream: `76b9612775d0e0e13b9aeec716d93c8a77b97242`.
 - `origin`: `git@github.com:retired64/sm64coopdx-MI.git`.
 - Fuente elegida: `https://github.com/ManIsCat2/sm64coopdx.git`, rama `android`.
-- `upstream` todavía no está configurado localmente. No se consultó el estado
-  remoto actual de Android durante esta documentación.
+- `upstream` configurado y consultado el 2026-10-29: android estable sigue en
+  `99c8d21ab`, igual a la base integrada; no hay novedades pendientes.
+- Configuración efectiva por clon: [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md).
+- rerere local activado, con autoupdate=false para revisar resoluciones.
 - No se han configurado protección de ramas, CI MI, sincronización programada,
-  `rerere`, identidad pública propia del APK ni publicación automática.
+  identidad pública propia del APK ni publicación automática.
 - El diseño accesible tiene aceptación general del usuario en su teléfono;
   no implica haber probado cada idioma, tema, mando o condición de red.
 
@@ -53,7 +55,17 @@ Si la fuente cambia, documentar la decisión y la nueva matriz antes de adoptarl
 
 ## 4. Preparación inicial, una vez por clon
 
-Primero leer RULES.md y comprobar árbol de trabajo y remotos:
+Primero leer RULES.md. La preparación reproducible, validada y recomendada es:
+
+```sh
+python tools/mi/configure_upstream.py setup
+python tools/mi/configure_upstream.py check
+```
+
+Ver [UPSTREAM_SETUP.md](UPSTREAM_SETUP.md) para alcance, valores y errores. setup
+no mezcla código; check es offline. El fetch no actualiza una rama local existente.
+
+Si se prepara manualmente, comprobar árbol de trabajo y remotos:
 
 ```sh
 git status --short --branch
@@ -66,7 +78,7 @@ reset ni sobrescribirlos para despejar el merge. Verificar la URL si `upstream`
 ya existe. Solo si no existe:
 
 ```sh
-git remote add upstream https://github.com/ManIsCat2/sm64coopdx.git
+git remote add -t android --no-tags upstream https://github.com/ManIsCat2/sm64coopdx.git
 ```
 
 Obtener referencias sin mezclar código:
@@ -80,8 +92,10 @@ git fetch upstream
 aparece automáticamente al clonar el fork en otro teléfono. Este paso se repite
 por clon. Los cambios en código, pruebas y documentación sí viajan con Git.
 
-Opcional local, deliberado: `git config rerere.enabled true`. Una resolución
-recordada reduce trabajo repetido, pero debe revisarse; no prueba corrección.
+La configuración local aplicada incluye rerere.enabled=true y
+rerere.autoupdate=false. Una resolución recordada debe revisarse; no prueba
+corrección. El bloque manual anterior no establece por sí solo todos los valores
+de protección local: usar setup o completar la tabla de UPSTREAM_SETUP.md.
 
 ## 5. Elegir y fijar un candidato
 
@@ -327,7 +341,8 @@ fijar herramientas/dependencias y requerir revisión humana y pruebas físicas.
 No programar merges, upgrades de dependencias ni releases automáticos por el
 mero hecho de que exista una nueva punta Android.
 
-Preparación pendiente: configurar upstream por clon, protecciones y checks
+Preparación aplicada en este clon; repetir setup en clones nuevos. Pendientes:
+protecciones y checks
 requeridos en GitHub, CI Android dedicado a MI, identidad/versionado público,
 registro reproducible de entorno y pruebas en otro teléfono. No afirmar que esos
 controles existen hasta verificar su configuración efectiva.
