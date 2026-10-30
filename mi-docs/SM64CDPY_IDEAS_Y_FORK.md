@@ -1319,3 +1319,14 @@ ROM en CI no describe este port. Se corrige la ruta de copia de recursos Gradle.
 [MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md) registra flujo y validaciones locales.
 Primera ejecución Ubuntu/Gradle y prueba física pendientes; no se declara un build
 CI exitoso antes de ejecutarlo. Publicación y rama predeterminada son pasos explícitos.
+
+
+## 30. Primera compilación Android en Actions completada
+
+2026-10-30 UTC. El fallo de :app se resolvió con entrada Gradle standalone y
+preflight. Run 41013511475 sobre e7d0ac815 completó build, firma, validación y
+subida del artefacto sin ROM. Quedan avisos heredados no bloqueantes de Makefile.
+
+El usuario canceló la descarga local y pidió continuar la documentación; no se
+reanudó ni se afirma una verificación física/local del APK nuevo.
+[Registro completo](ci/2026-10-30-first-success.md).

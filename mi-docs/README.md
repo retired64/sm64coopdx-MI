@@ -7,6 +7,9 @@ La documentación heredada del juego permanece en sus rutas originales.
 
 ## Reglas y mantenimiento
 
+- [Primera compilación CI correcta](ci/2026-10-30-first-success.md): causa del fallo,
+  corrección, run exitoso y pruebas físicas pendientes.
+
 - [MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md): workflow manual Android sin ROM,
   artefactos, firma de prueba y comandos gh para ejecución/descarga.
 

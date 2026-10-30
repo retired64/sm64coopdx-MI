@@ -35,7 +35,8 @@ Implementado y versionado al inicio de este documento:
 
 No implementado: instalar desde catálogo, recibos/asociaciones, actualización
 individual/Update all, SQLite ni actualización automática del APK. El workflow
-MI está preparado, con primera ejecución remota pendiente (MI_ACTIONS_BUILD.md). Instalar debe continuar deshabilitado hasta que exista el flujo completo.
+MI completó su primera ejecución remota correcta; prueba física del artefacto
+pendiente (MI_ACTIONS_BUILD.md). Instalar debe continuar deshabilitado hasta que exista el flujo completo.
 No describir pruebas de planes futuros como resultados actuales.
 
 Resultado esperado de trabajo futuro: integración pequeña, localizable, con
@@ -490,3 +491,11 @@ platform/settings.gradle define :app al usar -p platform. El settings.gradle ra�
 heredado define :platform:app. No intercambiar nombres de tareas sin comprobar la
 entrada efectiva. La ruta de assets se deriva del directorio del módulo app, no
 de asumir dónde está rootProject. CI debe comprobar tareas antes del make del host.
+
+
+### Resultado CI posterior al primer fallo
+
+[Run y evidencia](ci/2026-10-30-first-success.md): e7d0ac815 compiló, verificó y
+subió el APK. El resultado remoto no acredita una descarga contrastada localmente
+ni pruebas físicas; la descarga se detuvo por petición del usuario. Registrar
+ambos niveles por separado y conservar el SHA del código realmente probado.

@@ -111,6 +111,11 @@ https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-w
 
 ## Validación registrada y límites
 
+Estado actual: el [run 41013511475](https://github.com/retired64/sm64coopdx-MI/actions/runs/41013511475)
+completó el build y la subida del artefacto. Ver el
+[registro de primera compilación correcta](ci/2026-10-30-first-success.md). Las
+notas iniciales siguientes conservan el contexto previo a esa ejecución.
+
 - actionlint 1.7.12: correcto; shellcheck y pyflakes desactivados porque no estaban
   instalados en el entorno local. Expresiones, sintaxis y estructura de Actions validadas.
 - test_catalog.py y test_requests.py: correctos en el entorno local. La prueba HTTP
@@ -149,3 +154,15 @@ ambas entradas. Se valida :app:tasks antes de la compilación del host.
 
 El primer fallo no fue falta de ROM. La confirmación del build Android completo
 se registrará tras la ejecución corregida, sin inferirla de una validación estática.
+
+
+## Resultado posterior: ejecución completa correcta
+
+Run 41013511475, commit e7d0ac815: job Android correcto en 8 min 48 s. Se completaron
+Gradle/NDK, firma, comprobaciones del APK y subida del artefacto sin ROM ni secrets.
+La descarga local se interrumpió a petición del usuario y no se reanudó. Por tanto,
+no se afirma verificación local independiente ni instalación física del APK nuevo.
+
+Evidencia, corrección y pendientes: [registro CI](ci/2026-10-30-first-success.md).
+Los avisos heredados sobre recetas duplicadas del Makefile permanecen y no fueron
+la causa del fallo de selección de módulo.

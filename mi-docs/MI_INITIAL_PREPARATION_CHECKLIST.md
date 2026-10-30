@@ -119,12 +119,12 @@ plataformas. No sirve todavía como política de validación propia de mi-main.
 - [ ] Añadir validación automática de PR hacia mi-main después del primer build validado.
 - [ ] Evitar ejecutar builds de escritorio para validar el MVP Android.
 - [x] Mantener el workflow heredado intacto cuando sea viable; revisar sus disparadores antes de decidir si deshabilitarlo en el fork.
-- [ ] Fijar Java, SDK, NDK y dependencias según el build validado.
+- [x] Fijar Java, SDK, NDK y dependencias según el build validado.
 - [x] Compilar inicialmente APK de prueba; no crear release, tag ni publicación automática.
 - [x] Usar firma de prueba adecuada sin claves privadas de publicación.
-- [ ] Producir artifact APK instalable y logs; identificar SHA MI y base upstream.
+- [x] Producir artifact APK instalable y logs; identificar SHA MI y base upstream.
 - [x] Establecer permisos mínimos de Actions, sin acceso a secretos en PR no confiables.
-- [ ] Comprobar el workflow en una ejecución real y corregir el procedimiento según evidencia.
+- [x] Comprobar el workflow en una ejecución real y corregir el procedimiento según evidencia.
 - [ ] Documentar una orden de build local equivalente al flujo validado.
 
 ## 6. Validación física de la base
@@ -471,8 +471,9 @@ No se configuraron CI/protecciones GitHub ni se promovió un motor nuevo.
 - [x] SDK/NDK fijados, C++17 y parámetros ABI/paralelismo Gradle.
 - [x] Corregida fuente de recursos Gradle a raíz; fallo explícito si faltan carpetas.
 - [x] Verificador APK, pruebas de artefactos incompletos y actionlint correctos.
-- [ ] Publicar el commit y decidir cambio de rama predeterminada a mi-main.
-- [ ] Primera ejecución real en Actions y prueba física del APK de Gradle.
+- [x] Publicar el commit y decidir cambio de rama predeterminada a mi-main.
+- [x] Primera ejecución real en Actions correcta tras corregir el grafo Gradle.
+- [ ] Prueba física del APK de Gradle en dispositivo.
 
 El make del host prepara fuentes generadas; no se publica un artefacto de escritorio.
 Detalle, comandos y limitaciones: [MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md).
@@ -483,3 +484,15 @@ Detalle, comandos y limitaciones: [MI_ACTIONS_BUILD.md](MI_ACTIONS_BUILD.md).
 Run 41012336610: tests y make host correctos; Gradle rechazó :app porque la entrada
 heredada era :platform:app. Se prepara settings Android standalone y preflight de
 tareas. Reintento real pendiente al crear esta nota; no marcar APK CI completado.
+
+
+### Primera compilación CI completa correcta — 2026-10-30 UTC
+
+- [x] Run 41013511475 correcto con e7d0ac815; job Android en 8 min 48 s.
+- [x] Compilación, firma, verificación y subida de artefacto completadas sin ROM.
+- [x] Corrección del grafo documentada, con preflight para evitar repetición.
+- [ ] Descarga y contraste local independiente: interrumpidos por el usuario.
+- [ ] Instalación y prueba física del nuevo APK; no se infiere de CI.
+
+[Registro de evidencia y límites](ci/2026-10-30-first-success.md). Las notas previas
+de ejecución pendiente describen el estado anterior a este resultado.
