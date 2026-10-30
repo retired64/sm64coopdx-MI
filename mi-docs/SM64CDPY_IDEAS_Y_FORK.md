@@ -1146,7 +1146,7 @@ verificación de firma/alineación/contenido del APK correctos. La navegación y
 presentación en dispositivo siguen pendientes de probar. No se ha ejecutado
 la vía Gradle ni se han creado commits/releases como parte de esta entrega.
 
-Detalles y matriz manual: [docs/mi/CATALOG_PREVIEW.md](docs/mi/CATALOG_PREVIEW.md).
+Detalles y matriz manual: [mi-docs/CATALOG_PREVIEW.md](CATALOG_PREVIEW.md).
 Siguiente paso: catálogo remoto y caché válida, después instalación Lua/ZIP.
 
 
@@ -1168,7 +1168,7 @@ Las regresiones automatizadas de idiomas y geometría pasaron; la interacción
 del parche en dispositivo sigue pendiente. El siguiente avance del catálogo
 remoto permanece después de validar este prototipo.
 
-Detalles: [docs/mi/DJUI_VIEWPORT_AND_TRANSLATIONS.md](docs/mi/DJUI_VIEWPORT_AND_TRANSLATIONS.md).
+Detalles: [mi-docs/DJUI_VIEWPORT_AND_TRANSLATIONS.md](DJUI_VIEWPORT_AND_TRANSLATIONS.md).
 
 
 ## 21. Confirmación del usuario: parche DJUI funcional
@@ -1190,7 +1190,7 @@ la búsqueda y detalles dentro del juego. Instalar sigue deshabilitado hasta
 completar el flujo de instalación con resultado real y recibos. No se duplica
 la pantalla de activación.
 
-Detalles y pruebas pendientes: [docs/mi/CATALOG_REMOTE.md](docs/mi/CATALOG_REMOTE.md).
+Detalles y pruebas pendientes: [mi-docs/CATALOG_REMOTE.md](CATALOG_REMOTE.md).
 
 
 ## 23. Catálogo como pantalla amplia — 2026-10-29
@@ -1200,7 +1200,7 @@ metadata y detalles amplios. La capacidad por página responde a la altura
 DJUI disponible; no se altera la escala del usuario. Explorar mods se traslada
 a la cabecera derecha del menú local. Se conservan sus flechas y motor local.
 
-Diseño y matriz física pendiente: [docs/mi/CATALOG_WORKSPACE.md](docs/mi/CATALOG_WORKSPACE.md).
+Diseño y matriz física pendiente: [mi-docs/CATALOG_WORKSPACE.md](CATALOG_WORKSPACE.md).
 
 
 ## 24. Revisión de capturas: accesibilidad visual
@@ -1210,7 +1210,7 @@ reduce el ancho útil, texto mayor y detalle alineado arriba. La escala DJUI se
 respeta sin reducir títulos automáticamente por falta de altura. Se mantiene
 la navegación nativa y el control local del juego.
 
-Arquitectura y validación: [docs/mi/CATALOG_ACCESSIBILITY.md](docs/mi/CATALOG_ACCESSIBILITY.md).
+Arquitectura y validación: [mi-docs/CATALOG_ACCESSIBILITY.md](CATALOG_ACCESSIBILITY.md).
 
 
 ## 25. Migración futura del formato del catálogo — 2026-10-29
@@ -1273,3 +1273,25 @@ resultó muy accesible en su teléfono. Se registra aceptación general del dise
 de tarjetas y lectura. No se presume cobertura individual de toda la matriz
 de mando, teclado, idiomas, temas y estados de red. Las notas anteriores de
 prueba física pendiente reflejan el estado previo a esta confirmación.
+
+
+## 26. Reglas operativas y mantenimiento reproducible — 2026-10-29
+
+[MANTENER-UPDATES.md](MANTENER-UPDATES.md) define el flujo actual recomendado;
+[RULES.md](RULES.md) registra contratos, puntos de contacto y los tres commits
+MI publicados. Revisar comportamiento aunque Git no indique conflictos y aunque
+compile: UI/input, rutas, ownership, TLS/caché, idiomas antiguos y empaquetado.
+
+Las referencias a remotos/configuración en secciones anteriores son históricas.
+Actualmente origin apunta al fork retired64/sm64coopdx-MI; upstream todavía no
+está configurado. En esta tarea solo se documenta, no se sincroniza ni se publica.
+
+
+## 27. AGENTS.md como entrada de trabajo — 2026-10-29
+
+[AGENTS.md](../AGENTS.md) define cómo trabajar en todo el fork: lectura de reglas y
+procedimiento, accesibilidad visual, UX, estructura nativa, estado/hilos, pruebas
+y mantenimiento frente a Android estable. Enlaza los planes e historial existentes
+sin reemplazarlos ni presentar funcionalidades pendientes como implementadas.
+Su creación no configura hooks, CI ni remotos; esos pasos mantienen su propio
+seguimiento y requieren comprobar su estado real.

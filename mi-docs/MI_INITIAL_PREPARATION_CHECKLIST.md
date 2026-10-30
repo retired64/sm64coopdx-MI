@@ -56,10 +56,10 @@ ni crear ramas adicionales solo para marcar este checklist.
 
 ## 2. Instrucciones y documentación del fork
 
-- [ ] Crear AGENTS.md propio con alcance Android y fuente upstream/android.
-- [x] Límites documentados en docs/mi/CATALOG_PREVIEW.md: DJUI y catálogo separados; el motor conserva gestión local. Red/disco pendientes.
+- [x] Crear AGENTS.md propio con alcance Android y fuente upstream/android.
+- [x] Límites documentados en mi-docs/CATALOG_PREVIEW.md: DJUI y catálogo separados; el motor conserva gestión local. Red/disco pendientes.
 - [x] Alcance documentado: el prototipo no duplica escáner, activación, incompatibilidades ni diagnóstico Lua.
-- [x] Mapa del primer módulo y conexión DJUI documentados en docs/mi/CATALOG_PREVIEW.md.
+- [x] Mapa del primer módulo y conexión DJUI documentados en mi-docs/CATALOG_PREVIEW.md.
 - [ ] Registrar SHA base, versión MI, herramientas y procedimiento de build en documentación propia.
 - [ ] Mantener README heredado y créditos; agregar instrucciones MI sin atribuirnos código ajeno.
 - [ ] Registrar decisiones técnicas y pruebas físicas pendientes sin marcarlas como completadas.
@@ -291,7 +291,7 @@ SHA-256: 87fc1a866998c79f58ada237fbf1c829484b941a89080eabb4331750477e35ef.
 
 En esta sesión se compiló con la biblioteca C++ de Termux para evitar que la
 biblioteca vendor de Codex interfiriera con zipalign. Ver comando, arquitectura,
-limitaciones y matriz manual en [docs/mi/CATALOG_PREVIEW.md](docs/mi/CATALOG_PREVIEW.md).
+limitaciones y matriz manual en [mi-docs/CATALOG_PREVIEW.md](CATALOG_PREVIEW.md).
 
 Siguiente etapa del roadmap: catálogo remoto y última caché válida fuera del hilo
 de UI. Luego instalación Lua/ZIP y recibos; actualización individual después.
@@ -314,7 +314,7 @@ Fecha: 2026-10-29.
 - [ ] Prueba física del parche con escala grande, idiomas externos antiguos,
   flechas, mando y retorno entre Mods/MI/detalles.
 
-Arquitectura y matriz: [docs/mi/DJUI_VIEWPORT_AND_TRANSLATIONS.md](docs/mi/DJUI_VIEWPORT_AND_TRANSLATIONS.md).
+Arquitectura y matriz: [mi-docs/DJUI_VIEWPORT_AND_TRANSLATIONS.md](DJUI_VIEWPORT_AND_TRANSLATIONS.md).
 La escala persistente sigue siendo del juego; el desplazamiento se guarda solo
 por panel y se libera al salir. No hay tareas asíncronas ni cachés persistentes
 nuevas. La compilación y verificación del APK de este parche se registran en
@@ -346,7 +346,7 @@ no implica que descarga/instalación o actualización de mods estén implementad
 - [x] Pruebas de parser, red/caché/cierre y endpoint real (1307 mods).
 - [ ] Prueba física del catálogo remoto y estados sin conexión.
 
-Arquitectura, límites y validación: [docs/mi/CATALOG_REMOTE.md](docs/mi/CATALOG_REMOTE.md).
+Arquitectura, límites y validación: [mi-docs/CATALOG_REMOTE.md](CATALOG_REMOTE.md).
 Instalación y actualización de mods continúan pendientes.
 
 - [x] APK de etapa 2 compilado; firma, alineación, CRC y libmain verificados.
@@ -364,7 +364,7 @@ SHA-256: 117ad63202cfd2c396679e331403231b64b4fe8593cdce7c632d1b8ff1c8961d.
 - [x] Anterior/siguiente EN/ES/PT y respaldo nativo generado.
 - [ ] Validación física del diseño, teclado, táctil, mando y temas.
 
-Detalles: [docs/mi/CATALOG_WORKSPACE.md](docs/mi/CATALOG_WORKSPACE.md).
+Detalles: [mi-docs/CATALOG_WORKSPACE.md](CATALOG_WORKSPACE.md).
 
 
 Validación registrada: pruebas de parser, idiomas y geometría correctas;
@@ -382,7 +382,7 @@ SHA-256: 6db65de2ac6df1aa598bd45d8addc4813fe034b710a3c2f44f5fc60939a7d870.
 - [x] Buscar mods EN/ES/PT con fallback para idiomas externos antiguos.
 - [ ] Prueba física de esta iteración con táctil, mando, teclado y escala grande.
 
-Diseño actual: [docs/mi/CATALOG_ACCESSIBILITY.md](docs/mi/CATALOG_ACCESSIBILITY.md).
+Diseño actual: [mi-docs/CATALOG_ACCESSIBILITY.md](CATALOG_ACCESSIBILITY.md).
 
 
 APK de esta iteración compilado con Makefile Termux; firma, alineación 4 KiB,
@@ -424,3 +424,27 @@ resultó muy accesible en su teléfono. Se registra aceptación general del dise
 de tarjetas y lectura. No se presume cobertura individual de toda la matriz
 de mando, teclado, idiomas, temas y estados de red. Las notas anteriores de
 prueba física pendiente reflejan el estado previo a esta confirmación.
+
+
+## Procedimiento y reglas de mantenimiento — 2026-10-29
+
+- [x] [MANTENER-UPDATES.md](MANTENER-UPDATES.md): configuración recomendada,
+  sincronización por SHA en rama aislada, revisión semántica, pruebas y promoción.
+- [x] [RULES.md](RULES.md): contratos, riesgos silenciosos, inventario e historial
+  exacto de los tres commits publicados sobre Android estable.
+- [ ] Configurar upstream en este clon y comprobar la punta remota candidata.
+- [ ] Configurar CI/protecciones y ejecutar una sincronización real probada.
+
+Crear la documentación no ejecuta esos pasos ni habilita actualizaciones de mods.
+
+
+## Guía operativa del repositorio — 2026-10-29
+
+- [x] [AGENTS.md](../AGENTS.md) creado en la raíz con alcance global del fork.
+- [x] Define lectura obligatoria de RULES.md y MANTENER-UPDATES.md y rutas a planes.
+- [x] Incluye accesibilidad, UX, arquitectura nativa, ownership, validación,
+  traducciones, protección de datos y revisión semántica tras sincronizaciones.
+
+Documentación solamente: no configura upstream, CI, protección de ramas ni instala
+funcionalidades futuras. Revisar el estado efectivo por clon antes de afirmar
+que esos controles están habilitados.
