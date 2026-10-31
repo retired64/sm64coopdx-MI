@@ -29,6 +29,8 @@
 struct MiCatalogView {
     struct MiCatalog* catalog;
     struct MiCatalogRequest* request;
+    struct MiInstall* recovery;
+    bool recoveryStartFailed;
     struct MiCatalogFetchInfo fetch;
     uint64_t revision;
     struct DjuiText* checkedAt;
@@ -50,6 +52,7 @@ struct MiCatalogView {
     struct DjuiButton* previous;
     struct DjuiButton* next;
     struct DjuiButton* retry;
+    struct DjuiButton* returnButton;
     struct DjuiButton* checkUpdates;
     struct MiUpdates* updates;
     struct MiUpdatesInfo updatesInfo;
@@ -62,6 +65,7 @@ struct MiCatalogView {
 static void mi_view_destroy(struct DjuiBase* base) {
     struct MiCatalogView* view = (struct MiCatalogView*)(intptr_t)base->tag;
     mi_catalog_request_close(view->request);
+    mi_install_close(view->recovery);
     mi_updates_close(view->updates);
     mi_catalog_free(view->catalog);
     for (size_t i = 0; i < MI_PAGE_SIZE; i++) {
@@ -249,7 +253,8 @@ struct MiInstallView {
     size_t count, selected;
     struct MiInstall* operation;
     struct MiUpdateCandidate update;
-    bool hasUpdate, startFailed;
+    bool hasUpdate, startFailed, updatingOperation;
+    enum MiInstallError blockedError;
     struct DjuiText *title, *author, *version, *category;
     struct DjuiRect* imageFrame;
     struct DjuiImage* image;
@@ -272,7 +277,7 @@ struct MiInstallView {
 static bool mi_install_active(enum MiInstallState state) {
     return state == MI_INSTALL_PENDING || state == MI_INSTALL_DOWNLOADING ||
         state == MI_INSTALL_EXTRACTING || state == MI_INSTALL_VERIFYING ||
-        state == MI_INSTALL_COMMITTING || state == MI_INSTALL_CANCELLING;
+        state == MI_INSTALL_COMMITTING || state == MI_INSTALL_CANCELLING || state == MI_INSTALL_ROLLING_BACK;
 }
 
 static void mi_install_view_destroy(struct DjuiBase* base) {
@@ -367,6 +372,8 @@ static const char* mi_install_error_text(enum MiInstallError error) {
         case MI_INSTALL_BUSY: return mi_catalog_text("INSTALL_BUSY");
         case MI_INSTALL_INTEGRITY: return mi_catalog_text("INSTALL_INTEGRITY");
         case MI_INSTALL_RECOVERY: return mi_catalog_text("INSTALL_RECOVERY");
+        case MI_INSTALL_CHANGED: return mi_catalog_text("UPDATE_CHANGED");
+        case MI_INSTALL_UPDATE_RESTORED: return mi_catalog_text("UPDATE_RESTORED");
         default: return mi_catalog_text("INSTALL_FORMAT");
     }
 }
@@ -387,7 +394,8 @@ static void mi_install_view_update(struct DjuiBase* base, UNUSED bool* skip) {
     bool newer = view->hasUpdate && view->count &&
         !strcmp(view->files[view->selected].versionId, view->update.file.versionId) &&
         !strcmp(view->files[view->selected].fileId, view->update.file.fileId);
-    const char* message = mi_catalog_text(newer ? "UPDATE_PREVIEW" : (supported ? "INSTALL_READY" : "INSTALL_UNSUPPORTED"));
+    const char* message = mi_catalog_text(newer ? "UPDATE_READY" : (supported ? "INSTALL_READY" : "INSTALL_UNSUPPORTED"));
+    if (view->blockedError != MI_INSTALL_OK) message = mi_install_error_text(view->blockedError);
     if (view->startFailed) message = mi_catalog_text("INSTALL_STORAGE");
     if (hasOperation) {
         switch (info.state) {
@@ -397,8 +405,9 @@ static void mi_install_view_update(struct DjuiBase* base, UNUSED bool* skip) {
             case MI_INSTALL_VERIFYING: message = mi_catalog_text("INSTALL_VERIFY"); break;
             case MI_INSTALL_COMMITTING: message = mi_catalog_text("INSTALL_FINISH"); break;
             case MI_INSTALL_CANCELLING: message = mi_catalog_text("INSTALL_CANCELLING"); break;
-            case MI_INSTALL_CANCELLED: message = mi_catalog_text("INSTALL_CANCELLED"); break;
-            case MI_INSTALL_COMPLETE: message = mi_catalog_text("INSTALL_DONE"); break;
+            case MI_INSTALL_CANCELLED: message = mi_catalog_text(view->updatingOperation ? "UPDATE_CANCELLED" : "INSTALL_CANCELLED"); break;
+            case MI_INSTALL_COMPLETE: message = mi_catalog_text(view->updatingOperation ? "UPDATE_DONE" : "INSTALL_DONE"); break;
+            case MI_INSTALL_ROLLING_BACK: message = mi_catalog_text("UPDATE_ROLLBACK"); break;
             case MI_INSTALL_FAILED: message = mi_install_error_text(info.error); break;
         }
     }
@@ -418,16 +427,18 @@ static void mi_install_view_update(struct DjuiBase* base, UNUSED bool* skip) {
     } else if (active) snprintf(status + used, sizeof(status) - used, "\n%s", filename);
     djui_text_set_text(view->status, status);
     mi_detail_accent(&view->status->base, hasOperation && info.state == MI_INSTALL_COMPLETE ? 2 : 1);
-    djui_text_set_text(view->install->text, mi_catalog_text(newer ? "UPDATE_AVAILABLE" : "INSTALL"));
-    djui_base_set_enabled(&view->install->base, !active && supported && !newer && !(hasOperation && info.state == MI_INSTALL_COMPLETE));
+    djui_text_set_text(view->install->text, mi_catalog_text(
+        hasOperation && info.state == MI_INSTALL_COMPLETE && view->updatingOperation ? "UPDATE_DONE_BUTTON" :
+        (newer ? "UPDATE_ACTION" : "INSTALL")));
+    djui_base_set_enabled(&view->install->base, !active && supported && view->blockedError == MI_INSTALL_OK && !(hasOperation && info.state == MI_INSTALL_COMPLETE));
     djui_base_set_enabled(&view->previous->base, !active && view->selected > 0);
     djui_base_set_enabled(&view->next->base, !active && view->selected + 1 < view->count);
-    djui_text_set_text(view->back->text, active ? mi_catalog_text("INSTALL_CANCEL") : DLANG(MENU, BACK));
-    djui_base_set_enabled(&view->back->base, !active || (info.state != MI_INSTALL_COMMITTING && info.state != MI_INSTALL_CANCELLING));
+    djui_text_set_text(view->back->text, active ? mi_catalog_text(view->updatingOperation ? "UPDATE_CANCEL" : "INSTALL_CANCEL") : DLANG(MENU, BACK));
+    djui_base_set_enabled(&view->back->base, !active || (info.state != MI_INSTALL_COMMITTING && info.state != MI_INSTALL_CANCELLING && info.state != MI_INSTALL_ROLLING_BACK));
     djui_base_set_visible(&view->bar->base, active && info.progress >= 0);
     djui_base_set_visible(&view->pulse->base, active && info.progress < 0);
     /* Keep normal browsing compact; reserve feedback space only when useful. */
-    bool feedback = hasOperation || view->startFailed || newer || !supported;
+    bool feedback = hasOperation || view->startFailed || newer || !supported || view->blockedError != MI_INSTALL_OK;
     struct DjuiThreePanel* panel = (struct DjuiThreePanel*)base;
     djui_base_compute(base);
     float width = fmaxf(1, base->comp.width - 24);
@@ -463,7 +474,7 @@ static void mi_install_choose(struct DjuiBase* caller) {
     if (!view || !view->count) return;
     struct MiInstallInfo info;
     if (mi_install_poll(view->operation, &info) && mi_install_active(info.state)) return;
-    mi_install_close(view->operation); view->operation = NULL; view->startFailed = false;
+    mi_install_close(view->operation); view->operation = NULL; view->startFailed = false; view->updatingOperation = false;
     if (caller == &view->previous->base && view->selected) view->selected--;
     if (caller == &view->next->base && view->selected + 1 < view->count) view->selected++;
     const struct MiCatalogFile* file = &view->files[view->selected];
@@ -476,9 +487,18 @@ static void mi_install_choose(struct DjuiBase* caller) {
 static void mi_install_begin(struct DjuiBase* caller) {
     struct MiInstallView* view = mi_install_view_for(caller);
     struct MiInstallInfo info;
-    if (!view || !view->count || (mi_install_poll(view->operation, &info) && mi_install_active(info.state))) return;
+    if (!view || !view->count || view->blockedError != MI_INSTALL_OK || (mi_install_poll(view->operation, &info) && mi_install_active(info.state))) return;
     mi_install_close(view->operation);
-    view->operation = mi_install_start(fs_get_write_path(""), &view->files[view->selected]);
+    view->updatingOperation = view->hasUpdate &&
+        !strcmp(view->files[view->selected].versionId, view->update.file.versionId) &&
+        !strcmp(view->files[view->selected].fileId, view->update.file.fileId);
+    if (view->updatingOperation) {
+        struct MiInstallPrevious previous = {0};
+        snprintf(previous.versionId, sizeof(previous.versionId), "%s", view->update.installedVersionId);
+        snprintf(previous.fileId, sizeof(previous.fileId), "%s", view->update.installedFileId);
+        snprintf(previous.destination, sizeof(previous.destination), "%s", view->update.destination);
+        view->operation = mi_install_update_start(fs_get_write_path(""), &view->files[view->selected], &previous);
+    } else view->operation = mi_install_start(fs_get_write_path(""), &view->files[view->selected]);
     view->startFailed = view->operation == NULL;
 }
 
@@ -495,6 +515,10 @@ static void mi_details(struct DjuiBase* caller) {
     struct MiInstallView* detail = calloc(1, sizeof(*detail));
     if (!detail) { djui_base_destroy(&panel->base); return; }
     detail->imageSlot = -1;
+    struct MiInstallInfo recovery = {0};
+    if (view->recoveryStartFailed) detail->blockedError = MI_INSTALL_STORAGE;
+    else if (mi_install_poll(view->recovery, &recovery) && recovery.state == MI_INSTALL_FAILED)
+        detail->blockedError = recovery.error;
     detail->count = mi_catalog_file_count(view->catalog, (size_t)caller->tag);
     detail->files = calloc(detail->count, sizeof(*detail->files));
     if (detail->count && !detail->files) { free(detail); djui_base_destroy(&panel->base); return; }
@@ -638,6 +662,11 @@ static void mi_thumbnail_poll_all(struct MiCatalogView* view) {
 }
 
 static void mi_view_update(struct MiCatalogView* view) {
+    struct MiInstallInfo recovery = {0};
+    bool recoveryKnown = mi_install_poll(view->recovery, &recovery);
+    bool recoveryActive = recoveryKnown && mi_install_active(recovery.state);
+    bool recoveryFailed = view->recoveryStartFailed || (recoveryKnown && recovery.state != MI_INSTALL_COMPLETE && !recoveryActive);
+    djui_base_set_enabled(&view->returnButton->base, !recoveryActive);
     size_t count = mi_view_match_count(view);
     size_t pages = count ? (count + view->pageSize - 1) / view->pageSize : 1;
     if (view->page >= pages) view->page = pages - 1;
@@ -695,7 +724,10 @@ static void mi_view_update(struct MiCatalogView* view) {
     djui_language_replace(mi_catalog_text("NEWS_FILTER"), filter, sizeof(filter), '@', number);
     djui_text_set_text(view->checkUpdates->text, view->updatesOnly ? mi_catalog_text("SHOW_ALL_MODS") : filter);
     djui_base_set_enabled(&view->checkUpdates->base, !view->updatesWanted && !view->fetch.running &&
-        view->updates && view->updatesInfo.state == MI_UPDATES_DONE && view->updatesInfo.available > 0);
+        view->updates && view->updatesInfo.state == MI_UPDATES_DONE && view->updatesInfo.available > 0 && !recoveryActive && !recoveryFailed);
+    if (recoveryActive) snprintf(status, sizeof(status), "%s", mi_catalog_text("UPDATE_RECOVERING"));
+    else if (recoveryFailed) snprintf(status, sizeof(status), "%s", view->recoveryStartFailed ?
+        mi_catalog_text("INSTALL_STORAGE") : mi_install_error_text(recovery.error));
     djui_text_set_text(view->status, status);
 
     char checked[128] = { 0 };
@@ -713,7 +745,7 @@ static void mi_view_update(struct MiCatalogView* view) {
         const struct MiCatalogEntry* entry = mi_catalog_entry(view->catalog, index);
         view->rows[slot]->base.tag = entry ? (s64)index : -1;
         djui_base_set_visible(&view->rows[slot]->base, entry != NULL);
-        djui_base_set_enabled(&view->rows[slot]->base, entry != NULL);
+        djui_base_set_enabled(&view->rows[slot]->base, entry != NULL && !recoveryActive);
         mi_thumbnail_update(view,slot,entry?entry->imageUrl:"");
         if (entry) {
             djui_text_set_text(view->rows[slot]->text, entry->title);
@@ -732,8 +764,8 @@ static void mi_view_update(struct MiCatalogView* view) {
     djui_text_set_text(view->pageText, page);
     djui_base_set_enabled(&view->previous->base, ready && view->page > 0);
     djui_base_set_enabled(&view->next->base, ready && view->page + 1 < pages);
-    djui_text_set_text(view->retry->text, mi_catalog_text(view->fetch.error == MI_FETCH_OK ? "NEWS_REFRESH" : "RETRY"));
-    djui_base_set_enabled(&view->retry->base, !view->fetch.running && !view->updatesWanted &&
+    djui_text_set_text(view->retry->text, mi_catalog_text(view->fetch.error == MI_FETCH_OK && !recoveryFailed ? "NEWS_REFRESH" : "RETRY"));
+    djui_base_set_enabled(&view->retry->base, !recoveryActive && !view->fetch.running && !view->updatesWanted &&
         !(view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING));
 }
 
@@ -783,6 +815,18 @@ static void mi_poll_request(struct DjuiBase* base, UNUSED bool* skip) {
         mi_view_update(view);
     }
     bool changed = false;
+    struct MiInstallInfo recovery = {0};
+    bool recoveryKnown = mi_install_poll(view->recovery, &recovery);
+    if (recoveryKnown && recovery.state == MI_INSTALL_FAILED && recovery.error == MI_INSTALL_BUSY && !mi_install_is_busy()) {
+        mi_install_close(view->recovery);
+        view->recovery = mi_install_recover_start(fs_get_write_path(""));
+        view->recoveryStartFailed = view->recovery == NULL;
+        changed = true;
+    }
+    if (view->updatesWanted && (view->recoveryStartFailed ||
+        (recoveryKnown && recovery.state == MI_INSTALL_FAILED && recovery.error != MI_INSTALL_BUSY))) {
+        view->updatesWanted = false; changed = true;
+    }
     if (view->installRevision != mi_install_revision()) {
         mi_updates_invalidate(view); view->installRevision = mi_install_revision(); changed = true;
     }
@@ -796,7 +840,7 @@ static void mi_poll_request(struct DjuiBase* base, UNUSED bool* skip) {
         if (!info.savedAt && mi_catalog_status(view->catalog) == MI_CATALOG_READY) info.savedAt = view->fetch.savedAt;
         view->fetch = info; view->revision = info.revision; changed = true;
     }
-    if (view->updatesWanted && !view->fetch.running) {
+    if (view->updatesWanted && !view->fetch.running && !mi_install_is_busy()) {
         view->updatesWanted = false;
         if (mi_catalog_status(view->catalog) == MI_CATALOG_READY) {
             view->updates = mi_updates_start(fs_get_write_path(""), view->catalog);
@@ -832,10 +876,25 @@ static void mi_retry(struct DjuiBase* caller) {
     struct MiCatalogView* view = mi_view_for(caller);
     if (!view || view->fetch.running || view->updatesWanted ||
         (view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING)) return;
+    struct MiInstallInfo recovery = {0};
+    if (view->recoveryStartFailed || (mi_install_poll(view->recovery, &recovery) &&
+        recovery.state != MI_INSTALL_COMPLETE && !mi_install_active(recovery.state))) {
+        mi_install_close(view->recovery);
+        view->recovery = mi_install_recover_start(fs_get_write_path(""));
+        view->recoveryStartFailed = view->recovery == NULL;
+    }
     mi_begin_request(view, true);
     view->updatesWanted = true;
     view->installRevision = mi_install_revision();
     mi_view_update(view);
+}
+
+/* Do not let Mods refresh while recovery is moving an installed unit. Network
+ * loading remains dismissible once this local recovery operation has finished. */
+static bool mi_catalog_recovery_back(struct DjuiBase* base) {
+    struct MiCatalogView* view = mi_view_for(base);
+    struct MiInstallInfo info;
+    return view && mi_install_poll(view->recovery, &info) && mi_install_active(info.state);
 }
 
 struct DjuiPanel* mi_catalog_panel_create(struct DjuiBase* caller) {
@@ -843,6 +902,8 @@ struct DjuiPanel* mi_catalog_panel_create(struct DjuiBase* caller) {
     if (!view) { djui_popup_create(mi_catalog_text("ERROR"), 2); return NULL; }
     for(size_t i=0;i<MI_PAGE_SIZE;i++){view->imageSlots[i]=-1;view->thumbnailState[i]=MI_THUMB_FAILED;}
     view->pageSize = MI_PAGE_SIZE;
+    view->recovery = mi_install_recover_start(fs_get_write_path(""));
+    view->recoveryStartFailed = view->recovery == NULL;
     view->installRevision = mi_install_revision();
     mi_begin_request(view, false);
     struct DjuiThreePanel* panel = mi_workspace(mi_catalog_text("TITLE"), 156, 72);
@@ -902,6 +963,8 @@ struct DjuiPanel* mi_catalog_panel_create(struct DjuiBase* caller) {
         djui_base_set_visible(&view->images[slot]->base,false);
     }
     struct DjuiButton* back = djui_button_create(footer, DLANG(MENU, BACK), DJUI_BUTTON_STYLE_BACK, djui_panel_menu_back);
+    view->returnButton = back;
+    panel->on_back = mi_catalog_recovery_back;
     mi_place(&back->base, 0, 4, 0.22f, 64);
     view->previous = djui_button_create(footer, mi_catalog_text("PREVIOUS"), DJUI_BUTTON_STYLE_NORMAL, mi_page_changed);
     mi_place(&view->previous->base, 0.24f, 4, 0.22f, 64);

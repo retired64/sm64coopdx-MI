@@ -232,3 +232,29 @@ corresponde, sin reservar permanentemente una franja para el mensaje de listo.
 Un fallo al crear la operación se conserva en la proyección UI hasta reintentar
 o elegir otro archivo. No cambia la máquina de estados ni la escritura nativa.
 Ver [CATALOG_ACCESSIBILITY.md](CATALOG_ACCESSIBILITY.md) para geometría y pruebas.
+
+
+### Estados terminales después de liberar recursos — 2026-10-30
+
+La suite de mantenimiento detectó que FAILED/CANCELLED podían publicarse desde
+catch antes de limpiar temporales y liberar la exclusión. Un consumidor podía
+reintentar al ver el fallo y recibir BUSY por la operación anterior aún finalizando.
+Se calcula el resultado en variables locales; después de salir del lock del
+filesystem y completar limpieza se incrementa la revisión, se libera busy y se
+publica el resultado bajo mutex. Éxito conserva ese mismo orden. No hay espera
+artificial ni cambio de formatos/recibos.
+
+Un handle rechazado con BUSY representa otra operación activa y no promete que
+el instalador global esté libre. Los tests de una operación aceptada verifican
+liberación inmediata al observar su terminal, sin sleep de gracia.
+Pruebas conectadas y limitaciones: [MI_MAINTENANCE_TESTS.md](MI_MAINTENANCE_TESTS.md).
+
+
+### Actualización individual implementada — 2026-10-30
+
+El motor añade sustitución explícita con recibo previo, respaldo, diario y rollback;
+la instalación inicial conserva su política de no sobrescritura. Los recibos
+nuevos registran directories como extensión opcional de schema 1. Recuperación
+al abrir el catálogo no descarga archivos. Contrato vigente y limitaciones:
+[CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md). Las notas anteriores que dejaban
+pendiente todo reemplazo corresponden a la etapa previa.

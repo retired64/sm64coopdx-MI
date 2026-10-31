@@ -112,6 +112,8 @@ extern "C" MiUpdateDecision mi_updates_compare(const MiCatalog* catalog,size_t i
         }
         if(!target)return MI_UPDATE_UNKNOWN;
         *out={};out->file=*target;snprintf(out->installedVersion,sizeof(out->installedVersion),"%s",original->version);
+        snprintf(out->installedVersionId,sizeof(out->installedVersionId),"%s",versionId);
+        snprintf(out->installedFileId,sizeof(out->installedFileId),"%s",fileId);
         return MI_UPDATE_AVAILABLE;
     }catch(...){return MI_UPDATE_UNKNOWN;}
 }

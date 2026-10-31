@@ -40,8 +40,9 @@ Estado de referencia: catálogo remoto, caché, búsqueda, detalle, cuadrícula 
 accesibilidad están implementados. Instalación Lua/ZIP y recibos schema 1 están implementados localmente para pruebas.
 Consulta de actualizaciones de solo lectura y miniaturas implementadas localmente:
 ver mi-docs/CATALOG_UPDATES.md y mi-docs/CATALOG_THUMBNAILS.md.
-Asociaciones de mods previos, reemplazo, Update all, SQLite y OTA
-propia siguen pendientes. Ver mi-docs/CATALOG_INSTALLATION.md. Verificar ese
+Actualización individual transaccional y recuperación implementadas localmente:
+ver mi-docs/CATALOG_REPLACEMENT.md. Asociaciones de mods previos, Update all, SQLite
+y OTA propia siguen pendientes. Ver mi-docs/CATALOG_INSTALLATION.md. Verificar ese
 estado al retomar trabajo y actualizarlo cuando realmente cambie.
 
 ### Frontera pública de datos
@@ -60,6 +61,8 @@ de MI se centraliza en mi-docs/; AGENTS.md permanece en la raíz:
 
 | Ruta | Para qué se consulta |
 |---|---|
+| [CATALOG_REPLACEMENT.md](mi-docs/CATALOG_REPLACEMENT.md) | Actualización individual, diario, respaldo, rollback y recuperación al entrar al catálogo |
+| [MI_MAINTENANCE_TESTS.md](mi-docs/MI_MAINTENANCE_TESTS.md) | Pruebas del ciclo inicial e interrupciones; reemplazo en CATALOG_REPLACEMENT |
 | [CATALOG_UPDATES.md](mi-docs/CATALOG_UPDATES.md) | Consulta de versiones posteriores, recibos e invalidación |
 | [CATALOG_THUMBNAILS.md](mi-docs/CATALOG_THUMBNAILS.md) | Tarjetas, imágenes, caché y slots de texturas |
 | [CATALOG_INSTALLATION.md](mi-docs/CATALOG_INSTALLATION.md) | Instalador local Lua/ZIP, propiedad, progreso y recuperación |
@@ -253,6 +256,8 @@ Para red, caché, hilos, dependencias de transporte o sincronización del motor:
 
 ```sh
 python tools/mi/test_install.py --bundled-curl
+python tools/mi/test_maintenance.py --bundled-curl
+python tools/mi/test_replacement.py --bundled-curl
 python tools/mi/test_requests.py --bundled-curl
 python tools/mi/test_requests.py --bundled-curl --live
 ```

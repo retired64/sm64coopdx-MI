@@ -534,3 +534,31 @@ adaptan. gfx_pc.c/.h añade refresco opt-in de textura por dirección, sin vacia
 global ni cambio del contrato de las demás texturas. Incluir estos puntos en la
 revisión semántica de upstream. No hay reemplazo de mods ni limpieza de recibos.
 Solo JSON público como contrato; no conocimiento de producción de datos.
+
+
+## Contratos de mantenimiento conectados — 2026-10-30
+
+Inventario nuevo: tests/mi/maintenance_cli.cpp y tools/mi/test_maintenance.py;
+contrato y matriz en [MI_MAINTENANCE_TESTS.md](MI_MAINTENANCE_TESTS.md). El harness
+intercepta rename/syscall únicamente en su link de pruebas, no en el juego. El
+workflow MI manual invoca las suites de instalación y mantenimiento.
+
+Punto de contacto corregido: mi_install.cpp publica todos los estados terminales
+de una operación aceptada después de limpieza/liberación de exclusión, no solo
+el éxito. install_cli.cpp comprueba esa garantía sin una espera de gracia. Busy
+por rechazo de una segunda solicitud no implica que otra operación haya terminado.
+Al sincronizar upstream, conservar orden de publicación, mutex, revisión y
+liberación de referencias. No confundir candidato de actualización con integridad
+local ni instalación ordinaria con reemplazo: este último sigue pendiente.
+
+
+## Actualización individual transaccional — 2026-10-30
+
+La implementación local supera el estado pendiente de reemplazo. Contrato y
+matriz: [CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md). Nuevos puntos de revisión:
+API mi_install_update_start/mi_install_recover_start, IDs instalados en candidato,
+registro opcional directories en recibos schema 1, diarios schema 2 y sus estados
+prepared/committed/cleaning/rolled_back. Preservar recuperación bajo el mismo lock,
+publicación terminal después de liberar recursos y evidencia cuando no sea seguro
+restaurar. test_replacement.py y maintenance_cli.cpp cubren fallos sin hooks de
+producción. No se amplía al escáner ni a activación ni a Actualizar todos.

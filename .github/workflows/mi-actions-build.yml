@@ -46,6 +46,9 @@ jobs:
           python3 tools/mi/embed_catalog.py --check
           python3 tools/mi/test_catalog.py
           python3 tools/mi/test_updates.py
+          python3 tools/mi/test_install.py
+          python3 tools/mi/test_maintenance.py
+          python3 tools/mi/test_replacement.py
           python3 tools/mi/test_thumbnails.py
           python3 tools/mi/test_requests.py
           python3 tests/mi/apk_test.py

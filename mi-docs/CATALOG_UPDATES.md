@@ -125,3 +125,24 @@ La vista previa de una actualización sigue sin habilitar el reemplazo de archiv
 Prueba física pendiente: tocar filtro repetidamente sin nueva consulta, búsqueda
 sin coincidencias, cero recibos, candidatas, rutas ausentes, fallo de red con copia
 guardada, cierre durante ambas fases y escala DJUI grande.
+
+
+### Validación con recibos del instalador real — 2026-10-30
+
+La suite [MI_MAINTENANCE_TESTS.md](MI_MAINTENANCE_TESTS.md) enlaza ambos módulos
+sin sustituir busy/revisión por stubs. Instala un ZIP con Lua sin versión en sus
+metadatos y obtiene un candidato por identidad/fechas del catálogo. Comprueba
+consulta de solo lectura, ocupado real, transacción pendiente y asociaciones
+ambiguas. Un archivo editado o añadido puede seguir mostrando un candidato:
+la consulta comprueba presencia, no integridad; repetir la instalación verifica
+hashes/listado y rechaza esos cambios. El reemplazo futuro debe revalidar al actuar.
+
+
+### De candidato a actualización individual — 2026-10-30
+
+El candidato conserva también IDs de versión/archivo instalados y el detalle
+habilita Actualizar para el archivo candidato. El backend comprueba propiedad y
+contenido de nuevo, sustituyendo la unidad con respaldo y recuperación. La
+consulta sigue siendo de solo lectura y no certifica integridad. Se comprueban
+diarios al abrir el catálogo en una operación separada sin descarga. Ver contrato
+vigente: [CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md). Actualizar todos sigue pendiente.

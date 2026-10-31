@@ -42,6 +42,8 @@ struct MiInstall {
     MiInstallInfo info{MI_INSTALL_PENDING,MI_INSTALL_OK,-1,0,0,0,{0}};
     MiCatalogFile source{};
     std::string root;
+    bool updating=false,recovering=false;
+    MiInstallPrevious previous{};
 };
 namespace {
 void release(MiInstall* op) { if(op->owners.fetch_sub(1)==1)delete op; }
@@ -228,10 +230,20 @@ json manifest(MiInstall* op,const fs::path& candidate) {
     }else add(candidate,"");
     require(!files.empty(),MI_INSTALL_FORMAT);return files;
 }
-void verify_manifest(const fs::path& target,const json& files) {
+void verify_manifest(const fs::path& target,const json& files, MiInstall* op=nullptr, bool strictDirectories=false,const json* ownedDirectories=nullptr) {
     require(!fs::is_symlink(target),MI_INSTALL_RECOVERY);
     require(files.is_array()&&!files.empty()&&files.size()<=MAX_FILES,MI_INSTALL_RECOVERY);
-    std::set<std::string> expected;
+    std::set<std::string> expected, directories;
+    uint64_t total=0;
+    if(strictDirectories&&ownedDirectories){
+        require(ownedDirectories->is_array()&&ownedDirectories->size()<=MAX_FILES,MI_INSTALL_RECOVERY);
+        for(const auto& value:*ownedDirectories){
+            std::string relative=value;require(relative_path(relative)&&directories.insert(relative).second,MI_INSTALL_RECOVERY);
+            fs::path path=target;
+            for(const auto& part:fs::path(relative)){path/=part;require(!fs::is_symlink(path),MI_INSTALL_RECOVERY);}
+            require(fs::is_directory(path),MI_INSTALL_RECOVERY);
+        }
+    }
     for(const auto& file:files){
         std::string relative=file.at("path").get<std::string>();
         require(relative.empty()||relative_path(relative),MI_INSTALL_RECOVERY);
@@ -239,14 +251,18 @@ void verify_manifest(const fs::path& target,const json& files) {
         fs::path p=target;
         for(const auto& part:fs::path(relative)) {p/=part;require(!fs::is_symlink(p),MI_INSTALL_RECOVERY);}
         require(fs::is_regular_file(p),MI_INSTALL_RECOVERY);
-        require(fs::file_size(p)==file.at("size").get<uint64_t>()&&hash_file(p)==file.at("sha256").get<std::string>(),MI_INSTALL_RECOVERY);
+        uint64_t size=file.at("size").get<uint64_t>();
+        require(size<=MAX_FILE&&size<=MAX_EXPANDED-total,MI_INSTALL_RECOVERY);total+=size;
+        require(fs::file_size(p)==size&&hash_file(p,op)==file.at("sha256").get<std::string>(),MI_INSTALL_RECOVERY);
+        for(fs::path parent=fs::path(relative).parent_path();!parent.empty();parent=parent.parent_path())
+            directories.insert(parent.generic_string());
     }
     if(fs::is_directory(target)){
         size_t count=0;
         for(const auto& child:fs::recursive_directory_iterator(target)){
             require(!child.is_symlink(),MI_INSTALL_RECOVERY);
             if(child.is_regular_file()) {require(++count<=MAX_FILES&&expected.count(child.path().lexically_relative(target).generic_string()),MI_INSTALL_RECOVERY);}
-            else require(child.is_directory(),MI_INSTALL_RECOVERY);
+            else require(child.is_directory()&&(!strictDirectories||directories.count(child.path().lexically_relative(target).generic_string())),MI_INSTALL_RECOVERY);
         }
         require(count==expected.size(),MI_INSTALL_RECOVERY);
     }else require(expected.size()==1&&expected.count(""),MI_INSTALL_RECOVERY);
@@ -256,10 +272,13 @@ void finish_receipt(const fs::path& receipt,const json& record) {
         require(read_json(receipt)==record,MI_INSTALL_RECOVERY);
     }else atomic_json(receipt,record);
 }
+void recover_update(const fs::path& mi,const fs::path& mods,const fs::path& journalPath);
 void recover(const fs::path& mi,const fs::path& mods) {
     for(const auto& item:fs::directory_iterator(mi/"transactions")){
         if(item.path().extension()!=".json")continue;
-        json journal=read_json(item.path());require(journal.at("schema")==1,MI_INSTALL_RECOVERY);
+        json journal=read_json(item.path());
+        if(journal.at("schema")==2){recover_update(mi,mods,item.path());continue;}
+        require(journal.at("schema")==1,MI_INSTALL_RECOVERY);
         std::string destination=journal.at("receipt").at("destination");std::string stageName=journal.at("stage");std::string candidate=journal.at("candidate");
         std::string key=journal.at("key");
         require(component(destination)&&component(stageName)&&stageName.compare(0,6,"stage-")==0&&relative_path(candidate)&&key.size()==64&&
@@ -285,11 +304,170 @@ void deliver(const fs::path& from,const fs::path& to) {
     (void)from;(void)to;throw Failure{MI_INSTALL_STORAGE};
 #endif
 }
+// Update journals are separate from schema-1 initial-install journals. Paths and
+// receipt identities are checked again on every recovery, never inferred by name.
+std::string record_key(const json& record) {
+    auto id=[&](const char* key,size_t capacity){
+        std::string value=record.at(key);
+        require(!value.empty()&&value.size()<capacity&&std::all_of(value.begin(),value.end(),[](unsigned char c){return c>=32&&c!=127;}),MI_INSTALL_CHANGED);
+        return value;
+    };
+    require(record.at("schema")==1&&component(record.at("destination")),MI_INSTALL_CHANGED);
+    return hash_text(id("mod_id",64)+"\n"+id("version_id",160)+"\n"+id("file_id",160));
+}
+bool entry_exists(const fs::path& path) {
+    struct stat st{};if(lstat(path.c_str(),&st)==0)return true;
+    require(errno==ENOENT,MI_INSTALL_RECOVERY);return false;
+}
+bool inode_matches(const fs::path& path,uint64_t device,uint64_t inode) {
+    struct stat st{};return lstat(path.c_str(),&st)==0&&!S_ISLNK(st.st_mode)&&
+        uint64_t(st.st_dev)==device&&uint64_t(st.st_ino)==inode;
+}
+void sync_update_directory(const fs::path& path) {
+    Descriptor fd(open(path.c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW));require(fd.fd>=0,MI_INSTALL_STORAGE);
+    // Some Android filesystems do not implement directory fsync. File contents
+    // are still fsynced, but that cannot certify power-loss durability there.
+    if(fsync(fd.fd)!=0)require(errno==EINVAL||errno==ENOTSUP,MI_INSTALL_STORAGE);
+}
+void update_ownership(const fs::path& mi,const json& expected,const json* transition=nullptr) {
+    try {
+        std::string wanted=record_key(expected),destination=expected.at("destination");
+        auto fold=[](std::string value){for(char& c:value)if(c>='A'&&c<='Z')c+=32;return value;};
+        bool found=false;unsigned count=0;uint64_t bytes=0;
+        for(const auto& item:fs::directory_iterator(mi/"receipts")){
+            if(item.path().extension()!=".json")continue;
+            require(++count<=MAX_FILES&&!item.is_symlink(),MI_INSTALL_CHANGED);
+            auto size=fs::file_size(item.path());require(size<=4*1024*1024&&size<=32*1024*1024-bytes,MI_INSTALL_CHANGED);bytes+=size;
+            json record=read_json(item.path());std::string key=record_key(record);
+            require(item.path().filename()==key+".json",MI_INSTALL_CHANGED);
+            if(key==wanted){require(record==expected&&!found,MI_INSTALL_CHANGED);found=true;}
+            else if(transition&&key==record_key(*transition))require(record==*transition,MI_INSTALL_CHANGED);
+            else require(record.at("mod_id")!=expected.at("mod_id")&&
+                fold(record.at("destination"))!=fold(destination),MI_INSTALL_CHANGED);
+        }
+        require(found,MI_INSTALL_CHANGED);
+    }catch(...){throw Failure{MI_INSTALL_CHANGED};}
+}
+const json* owned_directories(const json& record) {
+    return record.contains("directories")?&record.at("directories"):nullptr;
+}
+void verify_update_original(MiInstall* op,const fs::path& path,const json& record) {
+    try {verify_manifest(path,record.at("files"),op,true,owned_directories(record));}
+    catch(const Failure& failure){if(op->cancelled&&failure.code==MI_INSTALL_OK)throw;throw Failure{MI_INSTALL_CHANGED};}
+    catch(...){throw Failure{MI_INSTALL_CHANGED};}
+}
+void remove_record(const fs::path& path,const json& expected) {
+    if(!entry_exists(path))return;
+    require(read_json(path)==expected,MI_INSTALL_RECOVERY);
+    require(unlink(path.c_str())==0,MI_INSTALL_RECOVERY);
+}
+// false = old version restored; true = committed new version finalized.
+bool settle_update(const fs::path& mi,const fs::path& mods,const fs::path& journalPath) {
+    json journal=read_json(journalPath);
+    require(journal.at("schema")==2&&journal.at("kind")=="update",MI_INSTALL_RECOVERY);
+    json old=journal.at("old_receipt"),next=journal.at("new_receipt");
+    std::string oldKey=record_key(old),newKey=record_key(next),stageName=journal.at("stage"),candidate=journal.at("candidate");
+    std::string state=journal.at("state"),destination=old.at("destination");
+    require(journal.at("old_key")==oldKey&&journal.at("new_key")==newKey&&oldKey!=newKey&&
+        old.at("mod_id")==next.at("mod_id")&&old.at("version_id")!=next.at("version_id")&&
+        next.at("destination")==destination&&stageName.size()==13&&stageName.compare(0,7,"update-")==0&&component(stageName)&&
+        std::all_of(stageName.begin()+7,stageName.end(),[](unsigned char c){return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9');})&&
+        journalPath.filename()==stageName+".json"&&relative_path(candidate)&&
+        (candidate=="download"||candidate.compare(0,5,"tree/")==0||candidate=="tree")&&
+        (state=="prepared"||state=="committed"||state=="cleaning"||state=="rolled_back"),MI_INSTALL_RECOVERY);
+    fs::path stage=mi/stageName,target=mods/destination,backup=stage/"backup",rejected=stage/"rejected";
+    fs::path oldPath=mi/"receipts"/(oldKey+".json"),newPath=mi/"receipts"/(newKey+".json");
+    uint64_t oldDev=journal.at("old_device"),oldInode=journal.at("old_inode"),newDev=journal.at("new_device"),newInode=journal.at("new_inode");
+    if(entry_exists(stage))require(inode_matches(stage,journal.at("stage_device"),journal.at("stage_inode"))&&fs::is_directory(stage),MI_INSTALL_RECOVERY);
+    auto oldTarget=[&](){require(inode_matches(target,oldDev,oldInode),MI_INSTALL_RECOVERY);verify_manifest(target,old.at("files"),nullptr,true,owned_directories(old));};
+    auto newTarget=[&](){require(inode_matches(target,newDev,newInode),MI_INSTALL_RECOVERY);verify_manifest(target,next.at("files"),nullptr,true,owned_directories(next));};
+    bool committed=state=="committed"||state=="cleaning";
+    if(committed){
+        update_ownership(mi,next,&old);
+        newTarget();require(read_json(newPath)==next,MI_INSTALL_RECOVERY);
+        remove_record(oldPath,old);sync_update_directory(mi/"receipts");
+        if(state=="committed"){
+            if(entry_exists(backup)){
+                require(inode_matches(backup,oldDev,oldInode),MI_INSTALL_RECOVERY);
+                verify_manifest(backup,old.at("files"),nullptr,true,owned_directories(old));
+            }
+            journal["state"]="cleaning";atomic_json(journalPath,journal);sync_update_directory(mi/"transactions");
+        }
+    }else{
+        update_ownership(mi,old,&next);
+        require(read_json(oldPath)==old,MI_INSTALL_RECOVERY);
+        if(state=="prepared"){
+            bool hasBackup=entry_exists(backup);
+            if(hasBackup){require(inode_matches(backup,oldDev,oldInode),MI_INSTALL_RECOVERY);verify_manifest(backup,old.at("files"),nullptr,true,owned_directories(old));}
+            if(entry_exists(target)){
+                if(inode_matches(target,oldDev,oldInode)){require(!hasBackup,MI_INSTALL_RECOVERY);oldTarget();}
+                else{
+                    require(hasBackup&&!entry_exists(rejected),MI_INSTALL_RECOVERY);newTarget();
+                    deliver(target,rejected);sync_update_directory(mods);sync_update_directory(stage);
+                }
+            }else require(hasBackup,MI_INSTALL_RECOVERY);
+            if(!entry_exists(target)){deliver(backup,target);sync_update_directory(mods);sync_update_directory(stage);}
+            oldTarget();remove_record(newPath,next);sync_update_directory(mi/"receipts");
+            journal["state"]="rolled_back";atomic_json(journalPath,journal);sync_update_directory(mi/"transactions");
+        }else{oldTarget();require(!entry_exists(newPath),MI_INSTALL_RECOVERY);}
+    }
+    // Cleaning intent is durable before recursive disposal, making interrupted
+    // cleanup resumable without treating our partially deleted backup as damage.
+    if(entry_exists(stage))fs::remove_all(stage);
+    require(unlink(journalPath.c_str())==0,MI_INSTALL_RECOVERY);
+    sync_update_directory(mi);sync_update_directory(mi/"transactions");
+    return committed;
+}
+void recover_update(const fs::path& mi,const fs::path& mods,const fs::path& journalPath) {
+    (void)settle_update(mi,mods,journalPath);
+}
+void commit_update(MiInstall* op,const fs::path& mi,const fs::path& mods,const fs::path& stage,
+    const fs::path& candidate,const json& old,const json& next,fs::path& journalPath) {
+    fs::path target=mods/std::string(old.at("destination"));
+    struct stat oldStat{},newStat{},stageStat{};
+    require(lstat(target.c_str(),&oldStat)==0&&lstat(candidate.c_str(),&newStat)==0&&lstat(stage.c_str(),&stageStat)==0,MI_INSTALL_CHANGED);
+    require(S_ISDIR(oldStat.st_mode)==S_ISDIR(newStat.st_mode),MI_INSTALL_CHANGED);
+    update_ownership(mi,old);verify_update_original(op,target,old);cancelled(op);
+    update(op,MI_INSTALL_COMMITTING,-1);
+    json journal={{"schema",2},{"kind","update"},{"state","prepared"},{"stage",stage.filename().string()},
+        {"candidate",candidate.lexically_relative(stage).generic_string()},{"old_key",record_key(old)},{"new_key",record_key(next)},
+        {"old_receipt",old},{"new_receipt",next},{"old_device",uint64_t(oldStat.st_dev)},{"old_inode",uint64_t(oldStat.st_ino)},
+        {"new_device",uint64_t(newStat.st_dev)},{"new_inode",uint64_t(newStat.st_ino)},
+        {"stage_device",uint64_t(stageStat.st_dev)},{"stage_inode",uint64_t(stageStat.st_ino)}};
+    require(journal.dump(2).size()<=4*1024*1024,MI_INSTALL_LIMIT);
+    journalPath=mi/"transactions"/(stage.filename().string()+".json");
+    try{
+        sync_update_directory(stage);atomic_json(journalPath,journal);sync_update_directory(mi/"transactions");
+        deliver(target,stage/"backup");sync_update_directory(mods);sync_update_directory(stage);
+        require(inode_matches(stage/"backup",uint64_t(oldStat.st_dev),uint64_t(oldStat.st_ino)),MI_INSTALL_CHANGED);
+        verify_manifest(stage/"backup",old.at("files"),nullptr,true,owned_directories(old));
+        deliver(candidate,target);sync_update_directory(mods);sync_update_directory(stage);
+        verify_manifest(target,next.at("files"),nullptr,true,owned_directories(next));
+        update_ownership(mi,old);
+        finish_receipt(mi/"receipts"/(record_key(next)+".json"),next);sync_update_directory(mi/"receipts");
+        journal["state"]="committed";atomic_json(journalPath,journal);sync_update_directory(mi/"transactions");
+        require(settle_update(mi,mods,journalPath),MI_INSTALL_RECOVERY);journalPath.clear();
+    }catch(...){
+        if(!entry_exists(journalPath)){journalPath.clear();throw;}
+        bool committed=false;
+        try{
+            if(read_json(journalPath).at("state")=="prepared")update(op,MI_INSTALL_ROLLING_BACK,-1);
+            committed=settle_update(mi,mods,journalPath);
+        }catch(...){throw Failure{MI_INSTALL_RECOVERY};}
+        journalPath.clear();
+        if(!committed)throw Failure{MI_INSTALL_UPDATE_RESTORED};
+    }
+}
+
 void* work(void* context) {
     auto* op=static_cast<MiInstall*>(context);fs::path stage,journalPath;bool delivered=false,complete=false;
+    MiInstallState terminalState=MI_INSTALL_FAILED;
+    MiInstallError terminalError=MI_INSTALL_OK;
     try{
-        cancelled(op);require(op->source.supported,MI_INSTALL_FORMAT);
+        cancelled(op);require(op->recovering||op->source.supported,MI_INSTALL_FORMAT);
         fs::path root=fs::canonical(op->root),mi=root/"mi",mods=root/"mods";
+        if(op->recovering&&!entry_exists(mi/"transactions"))complete=true;
+        if(!complete){
         directory(mi);directory(mods);directory(mi/"receipts");directory(mi/"transactions");
         Descriptor lock(open((mi/"install.lock").c_str(),O_RDWR|O_CREAT|O_NOFOLLOW,0600));require(lock.fd>=0,MI_INSTALL_STORAGE);
         // Android emulated storage may return ENOSYS for flock. POSIX record
@@ -298,18 +476,47 @@ void* work(void* context) {
         recordLock.l_type=F_WRLCK;recordLock.l_whence=SEEK_SET;
         if(fcntl(lock.fd,F_SETLK,&recordLock)!=0)
             throw Failure{errno==EACCES||errno==EAGAIN?MI_INSTALL_BUSY:MI_INSTALL_STORAGE};
+        if(op->recovering)update(op,MI_INSTALL_COMMITTING,-1);
         try{recover(mi,mods);}catch(...){throw Failure{MI_INSTALL_RECOVERY};}
         // The lock excludes active installers. Discard only our abandoned,
         // unjournalled staging directories; nothing under mods is removed.
         for(const auto& item:fs::directory_iterator(mi)){
             std::string name=item.path().filename().string();
-            bool ours=name.size()==12&&name.compare(0,6,"stage-")==0&&
-                std::all_of(name.begin()+6,name.end(),[](unsigned char c){return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9');});
+            size_t prefix=name.compare(0,6,"stage-")==0?6:(name.compare(0,7,"update-")==0?7:0);
+            bool ours=prefix&&name.size()==prefix+6&&
+                std::all_of(name.begin()+prefix,name.end(),[](unsigned char c){return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9');});
             if(ours&&!item.is_symlink()&&item.is_directory()&&!fs::exists(mi/"transactions"/(name+".json")))fs::remove_all(item.path());
         }
         cancelled(op);
+        if(op->recovering)complete=true;
+        else{
         std::string key=receipt_key(op->source);fs::path receipt=mi/"receipts"/(key+".json");
-        if(fs::exists(receipt)){
+        json previous;
+        if(op->updating){
+            try{
+                require(component(op->previous.destination)&&op->previous.versionId[0]&&op->previous.fileId[0]&&
+                    strcmp(op->previous.versionId,op->source.versionId),MI_INSTALL_CHANGED);
+                MiCatalogFile oldSource=op->source;
+                snprintf(oldSource.versionId,sizeof(oldSource.versionId),"%s",op->previous.versionId);
+                snprintf(oldSource.fileId,sizeof(oldSource.fileId),"%s",op->previous.fileId);
+                fs::path oldPath=mi/"receipts"/(receipt_key(oldSource)+".json");
+                if(!entry_exists(oldPath)&&entry_exists(receipt)){
+                    auto current=read_json(receipt);
+                    require(record_key(current)==key&&current.at("destination")==op->previous.destination,MI_INSTALL_CHANGED);
+                    update_ownership(mi,current);verify_update_original(op,mods/std::string(current.at("destination")),current);
+                    {std::lock_guard<std::mutex> guard(op->mutex);snprintf(op->info.destination,sizeof(op->info.destination),"%s",op->previous.destination);}
+                    complete=true;
+                }else{
+                    previous=read_json(oldPath);
+                    require(record_key(previous)==receipt_key(oldSource)&&previous.at("destination")==op->previous.destination,MI_INSTALL_CHANGED);
+                    update(op,MI_INSTALL_VERIFYING,-1);update_ownership(mi,previous);
+                    verify_update_original(op,mods/std::string(previous.at("destination")),previous);
+                }
+            }catch(const Failure& failure){if(op->cancelled&&failure.code==MI_INSTALL_OK)throw;throw Failure{MI_INSTALL_CHANGED};}
+            catch(...){throw Failure{MI_INSTALL_CHANGED};}
+        }
+        if(complete){ /* A recovered/repeated update is already published. */ }
+        else if(!op->updating&&fs::exists(receipt)){
             auto prior=read_json(receipt);std::string dest=prior.at("destination");
             require(prior.at("schema")==1&&prior.at("mod_id")==op->source.modId&&prior.at("version_id")==op->source.versionId&&prior.at("file_id")==op->source.fileId&&component(dest),MI_INSTALL_RECOVERY);
             verify_manifest(mods/dest,prior.at("files"));
@@ -317,7 +524,7 @@ void* work(void* context) {
             complete=true;
         }else{
             std::string name=op->source.filename;require(component(name),MI_INSTALL_UNSAFE);
-            std::string temp=(mi/"stage-XXXXXX").string();require(mkdtemp(&temp[0])!=nullptr,MI_INSTALL_STORAGE);stage=temp;
+            std::string temp=(mi/(op->updating?"update-XXXXXX":"stage-XXXXXX")).string();require(mkdtemp(&temp[0])!=nullptr,MI_INSTALL_STORAGE);stage=temp;
             fs::path payload=stage/"download";
             try{download(op,op->source.url,payload);}catch(const Failure& failure){
                 bool fallback=failure.code==MI_INSTALL_NETWORK||failure.code==MI_INSTALL_HTTP||failure.code==MI_INSTALL_TLS;
@@ -338,12 +545,18 @@ void* work(void* context) {
             else throw Failure{MI_INSTALL_FORMAT};
             bool folder=fs::is_directory(candidate);std::string destination=folder?fs::path(name).stem().string():
                 (fs::path(name).extension()==".lua"?name:candidate.filename().string());
+            if(op->updating)destination=op->previous.destination;
             require(component(destination),MI_INSTALL_UNSAFE);
             {std::lock_guard<std::mutex> guard(op->mutex);snprintf(op->info.destination,sizeof(op->info.destination),"%s",destination.c_str());}
             json files=manifest(op,candidate);cancelled(op);
-            struct stat present{};require(lstat((mods/destination).c_str(),&present)!=0&&errno==ENOENT,MI_INSTALL_EXISTS);
+            if(!op->updating){struct stat present{};require(lstat((mods/destination).c_str(),&present)!=0&&errno==ENOENT,MI_INSTALL_EXISTS);}
             json record={{"schema",1},{"mod_id",op->source.modId},{"version_id",op->source.versionId},{"file_id",op->source.fileId},
                 {"version",op->source.version},{"destination",destination},{"files",files},{"installed_at",time(nullptr)}};
+            record["directories"]=json::array();
+            if(folder)for(const auto& entry:fs::recursive_directory_iterator(candidate))
+                if(entry.is_directory())record["directories"].push_back(entry.path().lexically_relative(candidate).generic_string());
+            if(op->updating){commit_update(op,mi,mods,stage,candidate,previous,record,journalPath);complete=true;}
+            else{
             struct stat st{};require(lstat(candidate.c_str(),&st)==0,MI_INSTALL_STORAGE);
             update(op,MI_INSTALL_COMMITTING,-1); // Cancellation is no longer accepted during atomic delivery.
             journalPath=mi/"transactions"/(stage.filename().string()+".json");
@@ -353,30 +566,36 @@ void* work(void* context) {
             deliver(candidate,mods/destination);delivered=true;
             try{finish_receipt(receipt,record);}catch(...){throw Failure{MI_INSTALL_RECOVERY};}
             require(unlink(journalPath.c_str())==0,MI_INSTALL_RECOVERY);journalPath.clear();complete=true;
+            }
+        }
+        }
         }
     }catch(const Failure& failure){
-        std::lock_guard<std::mutex> guard(op->mutex);
-        op->info.state=op->cancelled&&!delivered?MI_INSTALL_CANCELLED:MI_INSTALL_FAILED;
-        op->info.error=delivered?MI_INSTALL_RECOVERY:failure.code;op->info.progress=-1;
+        terminalState=op->cancelled&&!delivered?MI_INSTALL_CANCELLED:MI_INSTALL_FAILED;
+        terminalError=delivered?MI_INSTALL_RECOVERY:failure.code;
     }catch(...){
-        std::lock_guard<std::mutex> guard(op->mutex);op->info.state=op->cancelled&&!delivered?MI_INSTALL_CANCELLED:MI_INSTALL_FAILED;
-        op->info.error=delivered?MI_INSTALL_RECOVERY:MI_INSTALL_STORAGE;op->info.progress=-1;
+        terminalState=op->cancelled&&!delivered?MI_INSTALL_CANCELLED:MI_INSTALL_FAILED;
+        terminalError=delivered?MI_INSTALL_RECOVERY:MI_INSTALL_STORAGE;
     }
     std::error_code error;
-    if(!stage.empty())fs::remove_all(stage,error);
-    if(!delivered&&!journalPath.empty())fs::remove(journalPath,error);
+    if(!stage.empty()&&(!op->updating||journalPath.empty()))fs::remove_all(stage,error);
+    if(!op->updating&&!delivered&&!journalPath.empty())fs::remove(journalPath,error);
     {
         std::lock_guard<std::mutex> guard(op->mutex);
         installRevision++;busy=false;
-        if(complete){op->info.state=MI_INSTALL_COMPLETE;op->info.error=MI_INSTALL_OK;op->info.progress=1;}
+        // Publish every terminal state only after cleanup, kernel-lock release
+        // and process-wide exclusion release. A failed/cancelled UI may retry now.
+        op->info.state=complete?MI_INSTALL_COMPLETE:terminalState;
+        op->info.error=complete?MI_INSTALL_OK:terminalError;
+        op->info.progress=complete?1:-1;
     }
     release(op);return nullptr;
 }
 }
-extern "C" MiInstall* mi_install_start(const char* userRoot,const MiCatalogFile* source) {
-    if(!userRoot||!source)return nullptr;
+static MiInstall* start_install(const char* userRoot,const MiCatalogFile* source,const MiInstallPrevious* previous,bool recovering=false) {
+    if(!userRoot||(!source&&!recovering))return nullptr;
     auto* op=new(std::nothrow)MiInstall;if(!op)return nullptr;
-    try{op->root=userRoot;op->source=*source;}catch(...){delete op;return nullptr;}
+    try{op->root=userRoot;op->recovering=recovering;if(source)op->source=*source;if(previous){op->updating=true;op->previous=*previous;}}catch(...){delete op;return nullptr;}
     if(busy.exchange(true)){op->info.state=MI_INSTALL_FAILED;op->info.error=MI_INSTALL_BUSY;return op;}
     installRevision++;
     pthread_attr_t attr;int result=pthread_attr_init(&attr);
@@ -385,6 +604,15 @@ extern "C" MiInstall* mi_install_start(const char* userRoot,const MiCatalogFile*
         pthread_attr_destroy(&attr);}
     if(result){installRevision++;busy=false;op->info.state=MI_INSTALL_FAILED;op->info.error=MI_INSTALL_STORAGE;}
     return op;
+}
+extern "C" MiInstall* mi_install_start(const char* root,const MiCatalogFile* source) {
+    return start_install(root,source,nullptr);
+}
+extern "C" MiInstall* mi_install_update_start(const char* root,const MiCatalogFile* source,const MiInstallPrevious* previous) {
+    return previous?start_install(root,source,previous):nullptr;
+}
+extern "C" MiInstall* mi_install_recover_start(const char* root) {
+    return start_install(root,nullptr,nullptr,true);
 }
 extern "C" bool mi_install_poll(MiInstall* op,MiInstallInfo* info) {
     if(!op||!info)return false;std::lock_guard<std::mutex> lock(op->mutex);*info=op->info;return true;

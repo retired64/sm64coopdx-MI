@@ -26,6 +26,12 @@ La documentación heredada del juego permanece en sus rutas originales.
 
 ## Integración vigente
 
+- [CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md): actualización individual,
+  respaldo, rollback y recuperación de diarios.
+
+- [MI_MAINTENANCE_TESTS.md](MI_MAINTENANCE_TESTS.md): instalación/recibos/consulta
+  conectados, procesos interrumpidos, fallos de publicación y límites pendientes.
+
 - [CATALOG_UPDATES.md](CATALOG_UPDATES.md): consulta de solo lectura y resultados
   integrados en el catálogo, sin reemplazo todavía.
 - [CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md): diseño de tarjetas, carga de
@@ -41,6 +47,9 @@ La documentación heredada del juego permanece en sus rutas originales.
   desplazamiento de menús y respaldo de traducciones.
 
 ## Planes pendientes
+
+- [NATIVE_PORTABILITY_PLAN.md](NATIVE_PORTABILITY_PLAN.md): propuesta de motor
+  C++ compartido y aplicación independiente para Linux y Windows, fases y pruebas.
 
 - [CATALOG_UPDATES_PLAN.md](CATALOG_UPDATES_PLAN.md): detección interna y reemplazo
   seguro usando únicamente el contrato JSON existente, sin añadir lista

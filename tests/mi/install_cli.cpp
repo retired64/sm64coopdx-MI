@@ -14,6 +14,7 @@ int main(int argc,char** argv){
     MiCatalogFile file{};snprintf(file.modId,sizeof(file.modId),"test-mod");snprintf(file.versionId,sizeof(file.versionId),"v1");snprintf(file.fileId,sizeof(file.fileId),"file-1");
     snprintf(file.filename,sizeof(file.filename),"%s",argv[3]);snprintf(file.url,sizeof(file.url),"%s",argv[2]);file.supported=true;
     if(argc>5)snprintf(file.sha256,sizeof(file.sha256),"%s",argv[5]);
+    uint64_t revision=mi_install_revision();
     MiInstall* op=mi_install_start(argv[1],&file);assert(op);MiInstallInfo info{};
     bool cancelled=false,busyTested=false,sawDownload=false;uint64_t maxBytes=0;
     for(int i=0;i<6000;++i){
@@ -27,6 +28,8 @@ int main(int argc,char** argv){
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     auto result=nlohmann::json{{"state",info.state},{"error",info.error},{"destination",info.destination},{"http",info.httpStatus},{"saw_download",sawDownload},{"max_bytes",maxBytes}};
-    mi_install_close(op);std::this_thread::sleep_for(std::chrono::milliseconds(50));puts(result.dump().c_str());
+    // No grace sleep: terminal feedback must already permit retry/cleanup.
+    assert(!mi_install_is_busy() && mi_install_revision() >= revision + 2);
+    mi_install_close(op);puts(result.dump().c_str());
     return info.state==MI_INSTALL_COMPLETE||info.state==MI_INSTALL_FAILED||info.state==MI_INSTALL_CANCELLED?0:3;
 }

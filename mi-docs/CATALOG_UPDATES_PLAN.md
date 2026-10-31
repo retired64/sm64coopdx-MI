@@ -184,3 +184,11 @@ catálogo nuevo quedan pendientes. Este plan utiliza únicamente el contrato JSO
 La consulta inicial exige etiqueta overview fiable: no infiere la versión vigente
 solo por fecha máxima cuando la etiqueta falta. Es una restricción conservadora
 frente a las posibilidades de este plan. No se limpian ni migran recibos.
+
+
+## Implementación posterior — 2026-10-30
+
+La actualización individual de este plan ya está implementada localmente y
+validada con fallos sintéticos y raíces temporales. Contrato efectivo y límites
+en [CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md). Actualizar todos y asociación
+de mods previos siguen pendientes; la validación física del reemplazo es independiente.

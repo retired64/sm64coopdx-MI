@@ -1364,3 +1364,14 @@ permanece en detalles. No se cambia Refrescar/activación del juego.
 Contratos y validación: [CATALOG_UPDATES.md](CATALOG_UPDATES.md),
 [CATALOG_THUMBNAILS.md](CATALOG_THUMBNAILS.md). Trabajo local sin commit ni push;
 prueba física del nuevo diseño pendiente. Solo contrato público del catálogo.
+
+
+## Actualización individual: implementación local — 2026-10-30
+
+Se completa la sustitución explícita de un candidato MI con validación de propiedad,
+preparación, respaldo, diario, rollback y recuperación al abrir el catálogo. No hay
+actualización nueva automática al iniciar ni Actualizar todos. El destino instalado
+se conserva aunque cambie el nombre del comprimido. Se rechazan cambios locales
+y asociaciones ambiguas antes de sustituir. Contrato y pruebas en
+[CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md); pruebas físicas y promoción
+remota se registran por separado, sin confundir compilación con aceptación.

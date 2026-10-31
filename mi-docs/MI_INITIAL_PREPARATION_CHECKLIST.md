@@ -683,3 +683,47 @@ Validación correcta: test_catalog.py, test_updates.py, test_thumbnails.py
 --bundled-curl, test_install.py --bundled-curl, embed_catalog.py --check y
 git diff --check. Incluye cancelación, conflictos y recuperación del instalador
 en temporales; no equivale a prueba física de los controles nuevos.
+
+
+### Pruebas del ciclo de mantenimiento — 2026-10-30
+
+- [x] Conectar instalador, recibos reales y consulta en una suite sin stubs de busy/revisión.
+- [x] Validar preservación ante cambios locales, destinos ocupados y asociaciones ambiguas.
+- [x] Interrumpir procesos antes/después de entrega y después del recibo; recuperar en otro proceso.
+- [x] Simular ENOSPC al publicar diario/recibo y colisión tardía de destino.
+- [x] Corregir carrera de FAILED/CANCELLED antes de limpieza/liberación de exclusión.
+- [x] Interno: 20 casos correctos; Download: 19 correctos y enlace simbólico omitido por filesystem.
+- [x] Compilar/verificar APK y conservar la nueva suite en la puerta manual CI.
+- [ ] Reemplazo individual/rollback: no implementados por esta tarea.
+- [ ] Comprobar UI físicamente, disco realmente lleno, durabilidad ante corte de energía y Gradle/CI remoto.
+
+Contrato, comandos y evidencia: [MI_MAINTENANCE_TESTS.md](MI_MAINTENANCE_TESTS.md).
+APK /sdcard/Download/sm64coopdx-MI-maintenance-local.apk: 123906361 bytes; SHA-256
+c89219309e537e145d5cb202d2f14a476bd82e39a754ea8fd47e472a271e2890.
+Pruebas en temporales; no se modificaron mods reales. Sin commit/push ni Actions.
+
+
+### Actualización individual con respaldo y recuperación — 2026-10-30
+
+- [x] Habilitar Actualizar sobre el candidato con IDs instalados exactos.
+- [x] Preparar Lua/ZIP aparte y revalidar propiedad/hashes antes de mover.
+- [x] Mantener el destino y retirar archivos obsoletos mediante sustitución completa.
+- [x] Conservar respaldo, diario schema 2 y restaurar si no hay commit confirmado.
+- [x] Reanudar limpieza o rollback tras muerte del proceso; preservar evidencia si no es seguro.
+- [x] Registrar propiedad de carpetas vacías con extensión opcional schema 1.
+- [x] Recuperación asíncrona al entrar al catálogo, sin descarga; bloqueo de navegación durante movimiento.
+- [x] Ante un fallo de recuperación, permitir leer detalles y bloquear escritura con explicación.
+- [x] 50 escenarios internos y 49 en Download; enlace simbólico omitido externamente, comprobado internamente.
+- [x] Suites previas y transporte HTTPS real correctos en temporales; APK verificado.
+- [ ] Prueba física: interfaz, mando/táctil/escala/idiomas, cancelar, cerrar/reabrir y Refrescar del juego.
+- [ ] Disco realmente lleno, corte eléctrico, Gradle y nueva ejecución remota de CI.
+- [ ] Actualizar todos y asociaciones manuales de mods previos: fuera de esta etapa.
+
+Contrato: [CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md). La sección anterior
+que dejaba reemplazo pendiente describe la etapa de pruebas previa, ya superada
+por esta implementación local. No se añadió recuperación al arranque del motor:
+tras una interrupción entrar a Explorar mods recupera antes del refresco local.
+
+APK /sdcard/Download/sm64coopdx-MI-updates-local.apk: 124369209 bytes. SHA-256
+4daefaf42f9a99b1b2c02b0569f3d902480b85c6fcb99c76ea6cbdac3590be3d.
+Sin commit/push, release ni Actions.

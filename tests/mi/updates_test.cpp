@@ -51,7 +51,7 @@ int main(int argc,char** argv){
     base["mods"]=json::array({base["mods"][0]});base["mod_count"]=1;
     auto& mod=base["mods"][0];mod["version"]="v2.0";
     mod["versions"]=json::array({version("old","1.0","2025-01-01"),version("new","2.0","2025-02-01")});
-    MiUpdateCandidate candidate{};assert(compare(base,&candidate)==MI_UPDATE_AVAILABLE);assert(std::string(candidate.file.versionId)=="new");
+    MiUpdateCandidate candidate{};assert(compare(base,&candidate)==MI_UPDATE_AVAILABLE);assert(std::string(candidate.file.versionId)=="new");assert(std::string(candidate.installedVersionId)=="old"&&std::string(candidate.installedFileId)=="primary-old");
     auto v=base;std::reverse(v["mods"][0]["versions"].begin(),v["mods"][0]["versions"].end());assert(compare(v)==MI_UPDATE_AVAILABLE);
     v=base;v["mods"][0]["version"]="1.0";assert(compare(v)==MI_UPDATE_NONE);
     v=base;v["mods"][0]["version"]="unknown";assert(compare(v)==MI_UPDATE_UNKNOWN);

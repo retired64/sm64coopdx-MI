@@ -9,6 +9,7 @@ enum MiUpdateDecision { MI_UPDATE_NONE, MI_UPDATE_AVAILABLE, MI_UPDATE_UNKNOWN }
 struct MiUpdateCandidate {
     struct MiCatalogFile file;
     char installedVersion[96], destination[256];
+    char installedVersionId[160], installedFileId[160];
 };
 enum MiUpdatesState { MI_UPDATES_RUNNING, MI_UPDATES_DONE, MI_UPDATES_FAILED, MI_UPDATES_CANCELLED };
 enum MiUpdatesError { MI_UPDATES_OK, MI_UPDATES_STORAGE, MI_UPDATES_BUSY, MI_UPDATES_INVALID };

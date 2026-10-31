@@ -174,3 +174,22 @@ El job de contratos incluye test_updates.py y test_thumbnails.py: fixtures y HTT
 locales, sin ROM ni catálogos privados. Se mantiene el workflow manual de build MI;
 no se ejecutó Actions por estos cambios. La opción --live es una validación local
 separada y no es requisito de red de esas suites en CI.
+
+
+### Puerta de mantenimiento MI — 2026-10-30
+
+La validación manual incluye test_install.py y test_maintenance.py además de las
+suites previas. La segunda enlaza parser, consulta e instalador reales y usa HTTP
+loopback, raíces temporales e interrupciones de procesos de prueba. Los wrappers
+de fallos están únicamente en el ejecutable de tests: no se añaden al APK.
+No requiere ROM ni secretos. Incorporar estas líneas al workflow no ejecuta Actions
+ni acredita su resultado en Ubuntu; se verificó localmente en Termux ARM64.
+Detalle: [MI_MAINTENANCE_TESTS.md](MI_MAINTENANCE_TESTS.md).
+
+
+### Suite de reemplazo individual — 2026-10-30
+
+La puerta manual añade python3 tools/mi/test_replacement.py. Usa raíces y servidor
+HTTP temporales, enlaza módulos reales y simula fallos solo en su ejecutable de
+tests. No requiere ROM ni acceso al catálogo público. Configurar el paso no
+ejecuta Actions: la comprobación Ubuntu/Gradle remota sigue pendiente.
