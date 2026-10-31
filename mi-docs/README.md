@@ -95,3 +95,9 @@ consulta el repositorio. Contrato: [BUNDLED_CATALOG.md](BUNDLED_CATALOG.md).
 
 Regla vigente: [VERSIONING_AND_RELEASES.md](VERSIONING_AND_RELEASES.md). Conservar versionCode y firma upstream;
 personalizar solo versionName. Catálogo incluido actualizado: 1,311 mods.
+
+
+## Workflow manual de releases
+
+Preparado: [RELEASE_WORKFLOW.md](RELEASE_WORKFLOW.md). Reutiliza el build verificado
+y publica solo al ejecutarlo explícitamente. Ejecución remota pendiente.

@@ -1,0 +1,129 @@
+name: MI Android Release
+run-name: MI Android Release · ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Mark this release as a prerelease
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mi-android-release
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Validate release identity
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/mi-main
+          python3 - <<'PY'
+          import os, re, xml.etree.ElementTree as ET
+          from pathlib import Path
+          gradle = Path('platform/app/build.gradle').read_text()
+          version = re.search(r'versionName\s+"([^"]+)"', gradle).group(1)
+          code = int(re.search(r'versionCode\s+(\d+)', gradle).group(1))
+          match = re.fullmatch(r'(\d+\.\d+\.\d+)-mi\.([1-9]\d*)', version)
+          if not match:
+              raise SystemExit('Expected upstream-version-mi.revision')
+          attrs = ET.parse('platform/app/src/main/AndroidManifest.xml').getroot().attrib
+          ns = '{http://schemas.android.com/apk/res/android}'
+          assert attrs[ns+'versionName'] == version
+          assert int(attrs[ns+'versionCode']) == code
+          header = Path('src/pc/network/version.h').read_text()
+          assert re.search(r'#define\s+SM64COOPDX_VERSION\s+"v'+re.escape(match[1])+r'"', header)
+          assert int(re.search(r'#define\s+VERSION_NUMBER\s+(\d+)', header).group(1)) == code
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={version}\ntag=v{version}\n')
+          PY
+
+  build:
+    needs: prepare
+    uses: ./.github/workflows/mi-actions-build.yml
+    permissions:
+      contents: read
+
+  publish:
+    needs: [prepare, build]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      MI_VERSION: ${{ needs.prepare.outputs.version }}
+      MI_TAG: ${{ needs.prepare.outputs.tag }}
+      MI_PRERELEASE: ${{ inputs.prerelease }}
+    steps:
+      - name: Download verified artifact from this run
+        run: |
+          gh run download "$GITHUB_RUN_ID" --name "sm64coopdx-MI-arm64-$GITHUB_SHA" --dir dist
+          (cd dist && sha256sum --check SHA256SUMS.txt)
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          report = json.loads(Path('dist/build-info.json').read_text())
+          apk = Path('dist/sm64coopdx-MI-arm64.apk')
+          assert report['commit'] == os.environ['GITHUB_SHA']
+          assert report['sha256'] == hashlib.sha256(apk.read_bytes()).hexdigest()
+          assert report['bytes'] == apk.stat().st_size
+          assert report['abi'] == 'arm64-v8a'
+          PY
+      - name: Create release with verified assets and publish
+        run: |
+          # Check exact tag existence. Only HTTP 404 permits creating a new tag.
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          base = os.environ['GITHUB_API_URL']+'/repos/'+os.environ['GH_REPO']
+          for path in ['/git/ref/tags/'+os.environ['MI_TAG'], '/releases/tags/'+os.environ['MI_TAG']]:
+              request = urllib.request.Request(base+path, headers={'Authorization': 'Bearer '+os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
+              try:
+                  urllib.request.urlopen(request).close()
+              except urllib.error.HTTPError as error:
+                  if error.code == 404:
+                      continue
+                  raise
+              raise SystemExit('Tag or release already exists; refusing to overwrite')
+          PY
+          cat > "$RUNNER_TEMP/mi-release-notes.md" <<EOF
+          Native mod catalog integration for Android, based on the stable upstream Android version.
+
+          - Browse the bundled catalog, search mods and view their details.
+          - Download and install supported Lua/ZIP mods from the catalog CDN.
+          - Update individual managed mods with transactional replacement and recovery.
+          - The game retains its own mod refresh and activation controls.
+          - Catalog data is included in the APK; remote catalog refresh is disabled.
+
+          ARM64 only. The game requests your own ROM at startup. No ROM is included.
+          Package, versionCode and public signing key are inherited from upstream.
+          This public key is not an exclusive private MI signing identity.
+
+          Commit: $GITHUB_SHA
+          See SHA256SUMS.txt and build-info.json for artifact verification.
+          EOF
+          args=()
+          if [ "$MI_PRERELEASE" = true ]; then args+=(--prerelease); fi
+          # Upload all assets to a draft first; failures never expose a partial public release.
+          gh release create "$MI_TAG" --target "$GITHUB_SHA" --title "SM64coopdx-MI $MI_VERSION" --notes-file "$RUNNER_TEMP/mi-release-notes.md" --draft "${args[@]}" dist/sm64coopdx-MI-arm64.apk dist/build-info.json dist/SHA256SUMS.txt
+          gh release edit "$MI_TAG" --draft=false "${args[@]}"
+          gh release view "$MI_TAG" --json url --jq .url >> "$GITHUB_STEP_SUMMARY"

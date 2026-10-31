@@ -763,3 +763,9 @@ Este build ignora cachés remotas y no ofrece Buscar novedades. Fuente única: D
 incluida en el APK. Estado vigente: [INCLUDED_ONLY_BUILD.md](INCLUDED_ONLY_BUILD.md).
 Plan posterior: [REMOTE_DATABASE_PLAN.md](REMOTE_DATABASE_PLAN.md). Las notas
 anteriores de refresco remoto describen una etapa previa.
+
+
+## Workflow manual de releases
+
+Preparado: [RELEASE_WORKFLOW.md](RELEASE_WORKFLOW.md). Reutiliza el build verificado
+y publica solo al ejecutarlo explícitamente. Ejecución remota pendiente.

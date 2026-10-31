@@ -3,12 +3,13 @@ run-name: MI Android APK · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: mi-android-${{ github.ref }}
+  group: mi-android-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:

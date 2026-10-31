@@ -25,3 +25,9 @@ de este nuevo conjunto.
 El workflow manual existente compila artefactos. No añade publicación de releases
 ni se ejecuta automáticamente por este cambio. Las pruebas físicas y el resultado
 Gradle/NDK en GitHub deben confirmarse después de la compilación solicitada.
+
+
+## Workflow manual de releases
+
+Preparado: [RELEASE_WORKFLOW.md](RELEASE_WORKFLOW.md). Reutiliza el build verificado
+y publica solo al ejecutarlo explícitamente. Ejecución remota pendiente.
