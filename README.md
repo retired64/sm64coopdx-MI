@@ -39,6 +39,22 @@ Individual replacement and recovery have automated local test coverage;
 the latest changes still need the full physical-device validation described in
 [the replacement guide](mi-docs/CATALOG_REPLACEMENT.md).
 
+## Screenshots
+
+Captured on Android with the Spanish interface. Open an image to view it at full size.
+
+### Native Mods menu
+
+![Game Mods menu with the Explore mods entry](mi-docs/images/mods-menu.webp)
+
+### Browse the catalog
+
+![MI catalog with search, update checks, thumbnails, and pagination](mi-docs/images/mod-catalog.webp)
+
+### Mod details and installation
+
+![MI mod details showing author, category, version, description, and installation](mi-docs/images/mod-details.webp)
+
 ## Using the catalog
 
 1. Launch the game and open **Mods**.
