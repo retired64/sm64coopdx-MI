@@ -14,6 +14,7 @@ int main(int argc,char** argv){
     MiCatalogFile file{};snprintf(file.modId,sizeof(file.modId),"test-mod");snprintf(file.versionId,sizeof(file.versionId),"v1");snprintf(file.fileId,sizeof(file.fileId),"file-1");
     snprintf(file.filename,sizeof(file.filename),"%s",argv[3]);snprintf(file.url,sizeof(file.url),"%s",argv[2]);file.supported=true;
     if(argc>5)snprintf(file.sha256,sizeof(file.sha256),"%s",argv[5]);
+    if(argc>6)snprintf(file.mirror,sizeof(file.mirror),"%s",argv[6]);
     uint64_t revision=mi_install_revision();
     MiInstall* op=mi_install_start(argv[1],&file);assert(op);MiInstallInfo info{};
     bool cancelled=false,busyTested=false,sawDownload=false;uint64_t maxBytes=0;

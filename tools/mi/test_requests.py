@@ -14,6 +14,8 @@ import tempfile
 import threading
 import time
 
+from native_sqlite import build_sqlite
+
 ROOT = Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--live', action='store_true')
@@ -67,7 +69,7 @@ try:
                    '-I' + str(ROOT / 'lib/curl/include'), '-I' + str(ROOT / 'src'),
                    str(ROOT / 'src/pc/mod_integrations/mi_catalog.cpp'),
                    str(ROOT / 'src/pc/mod_integrations/mi_catalog_request.cpp'),
-                   str(ROOT / 'tests/mi/request_cli.cpp'), '-lz']
+                   str(ROOT / 'tests/mi/request_cli.cpp'), build_sqlite(directory), '-lz']
         environment = os.environ.copy()
         if args.bundled_curl:
             library = ROOT / 'lib/curl/android/arm64-v8a'
@@ -77,27 +79,45 @@ try:
         subprocess.run(command, check=True)
         base = f'http://127.0.0.1:{server.server_port}'
 
-        def run(path, cache='cache', cancel=False, fresh=False):
+        def run(path, cache='cache', cancel=False, fresh=False, refresh=False):
             url = path if path.startswith('https://') else base + path
             cmd = [str(executable), str(directory / cache), url, 'es']
             if cancel:
                 cmd.append('cancel')
             elif fresh:
                 cmd.append('fresh')
+            elif refresh:
+                cmd.append('refresh')
             return json.loads(subprocess.check_output(cmd, env=environment, text=True, timeout=50))
 
+        # Opening a fresh install is local-only and writes no fake remote cache.
+        initial = run('/must-not-fetch', 'bundled-only', fresh=True)
+        assert initial['count'] > 1000 and initial['cached'] and initial['http'] == 0 and not initial['saved'], initial
+        assert not (directory / 'bundled-only').exists()
         result = run('/good')
         assert result['count'] == 8 and result['error'] == 0 and result['saved'], result
         recent = run('/good', fresh=True)
-        assert recent['count'] == 8 and recent['cached'] and recent['http'] == 0, recent
+        assert recent['count'] == initial['count'] and recent['cached'] and recent['http'] == 0 and not recent['saved'], recent
+        # Even a valid old remote cache is ignored by both production entry points.
+        cache_path = directory / 'cache/catalog-cdn-v2.cache'
+        original = cache_path.read_bytes()
+        header, body = original.split(b'\n', 1)
+        fields = header.split(); fields[1] = b'1'
+        cache_path.write_bytes(b' '.join(fields) + b'\n' + body)
+        stale = run('/must-not-fetch', fresh=True)
+        assert stale['count'] == initial['count'] and stale['cached'] and stale['http'] == 0 and not stale['saved'], stale
+        refreshed = run('/must-not-fetch', refresh=True)
+        assert refreshed['count'] == initial['count'] and refreshed['http'] == 0 and not refreshed['saved'], refreshed
+        assert cache_path.read_bytes() == b' '.join(fields) + b'\n' + body
+        cache_path.write_bytes(original)
         assert run('/redirect')['count'] == 8
         assert run('/no-length')['count'] == 8
-        before = (directory / 'cache/catalog-v2.cache').read_bytes()
+        before = (directory / 'cache/catalog-cdn-v2.cache').read_bytes()
         for path, error in [('/bad', 4), ('/shrink', 4), ('/404', 2), ('/truncated', 1), ('/oversize', 4)]:
             result = run(path)
             assert result['count'] == 8 and result['error'] == error and result['saw_cache'], result
-            assert (directory / 'cache/catalog-v2.cache').read_bytes() == before
-        (directory / 'cache/catalog-v2.cache').write_bytes(before.replace(b'MI Sample Lua', b'XX Sample Lua', 1))
+            assert (directory / 'cache/catalog-cdn-v2.cache').read_bytes() == before
+        (directory / 'cache/catalog-cdn-v2.cache').write_bytes(before.replace(b'MI Sample Lua', b'XX Sample Lua', 1))
         result = run('/404')
         assert result['count'] == 8 and result['saw_cache'] and result['title_is_sample'], result
         assert run('/good')['saved']
@@ -108,11 +128,11 @@ try:
         assert result['count'] == 8 and result['error'] == 6 and not result['saved'], result
         assert (directory / 'not-a-directory').read_text() == 'preserve'
         assert run('/slow', 'cancelled', cancel=True)['cancelled']
-        assert not (directory / 'cancelled/catalog-v2.cache').exists()
+        assert not (directory / 'cancelled/catalog-cdn-v2.cache').exists()
         assert not list(directory.rglob('*.tmp-*'))
         print('MI requests: background fetch, redirect, cache, last-good, HTTP/error/truncation, shrink, storage and close passed.')
         if args.live:
-            result = run('https://raw.githubusercontent.com/retired64/sm64cdpy.releases/main/db/database_sm64coopdx.json', 'live')
+            result = run('https://raw.githubusercontent.com/retired64/sm64cdpy.releases/r2-phase6-flutter-fallback/assets/db/database_sm64coopdx.json', 'live')
             assert result['count'] > 1000 and result['error'] == 0 and result['saved'], result
             assert run('/404', 'live')['count'] == result['count']
             print('Published HTTPS catalog:', result)

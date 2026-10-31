@@ -6,6 +6,8 @@ import subprocess
 import tempfile
 import sys
 
+from native_sqlite import build_sqlite
+
 ROOT = Path(__file__).resolve().parents[2]
 subprocess.run([sys.executable, str(ROOT / 'tools/mi/embed_catalog.py'), '--check'], check=True)
 with tempfile.TemporaryDirectory(prefix='mi-catalog-') as directory:
@@ -14,9 +16,14 @@ with tempfile.TemporaryDirectory(prefix='mi-catalog-') as directory:
         os.environ.get('CXX', 'clang++'), '-std=c++17', '-Wall', '-Wextra', '-Werror',
         '-I' + str(ROOT / 'src'),
         str(ROOT / 'src/pc/mod_integrations/mi_catalog.cpp'),
-        str(ROOT / 'tests/mi/catalog_test.cpp'), '-o', executable,
+        str(ROOT / 'tests/mi/catalog_test.cpp'), build_sqlite(directory), '-pthread', '-o', executable,
     ], check=True)
     subprocess.run([executable, str(ROOT / 'tests/mi/catalog_sample.json')], check=True)
+    database_test = str(Path(directory) / 'database-test')
+    subprocess.run([os.environ.get('CXX','clang++'),'-std=c++17','-Wall','-Wextra','-Werror',
+        '-I'+str(ROOT/'src'),str(ROOT/'tests/mi/catalog_database_test.cpp'),str(Path(directory)/'mi-sqlite.o'),'-pthread','-o',database_test],check=True)
+    subprocess.run([database_test,str(ROOT/'assets/mi/catalog.json'),str(ROOT/'assets/mi/catalog.db')],check=True)
+
 
 with tempfile.TemporaryDirectory(prefix='mi-ui-regression-') as directory:
     for name, sources in (

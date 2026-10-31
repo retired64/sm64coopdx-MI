@@ -562,3 +562,32 @@ prepared/committed/cleaning/rolled_back. Preservar recuperación bajo el mismo l
 publicación terminal después de liberar recursos y evidencia cuando no sea seguro
 restaurar. test_replacement.py y maintenance_cli.cpp cubren fallos sin hooks de
 producción. No se amplía al escáner ni a activación ni a Actualizar todos.
+
+
+## Fuente CDN exclusiva — 2026-10-30
+
+Se sustituye el origen anterior y la política de fallback por el catálogo
+personalizado y mirror como única descarga. Contrato y límite DynOS:
+[CDN_ONLY_CATALOG.md](CDN_ONLY_CATALOG.md). Las notas anteriores conservan historia.
+
+
+## Catálogo incluido SQLite — 2026-10-30
+
+La copia incluida pasa a una base SQLite de solo lectura. JSON sigue siendo el
+contrato remoto y el formato de caché actual. Arquitectura, límites y pruebas:
+[CATALOG_DATABASE.md](CATALOG_DATABASE.md). Esta nota supera la representación
+JSON literal incluida descrita anteriormente, sin cambiar sus IDs.
+
+
+## Modo incluido exclusivo — 2026-10-30
+
+Este build ignora cachés remotas y no ofrece Buscar novedades. Fuente única: DB
+incluida en el APK. Estado vigente: [INCLUDED_ONLY_BUILD.md](INCLUDED_ONLY_BUILD.md).
+Plan posterior: [REMOTE_DATABASE_PLAN.md](REMOTE_DATABASE_PLAN.md). Las notas
+anteriores de refresco remoto describen una etapa previa.
+
+
+## Versionado MI y catálogo incluido
+
+Regla vigente: [VERSIONING_AND_RELEASES.md](VERSIONING_AND_RELEASES.md). Conservar versionCode y firma upstream;
+personalizar solo versionName. Catálogo incluido actualizado: 1,311 mods.

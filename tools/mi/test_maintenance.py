@@ -17,6 +17,8 @@ import threading
 import time
 import zipfile
 
+from native_sqlite import build_sqlite
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -96,7 +98,7 @@ def build_cli(directory, bundled_curl):
     command = [os.environ.get('CXX', 'clang++'), '-std=c++17', '-Wall', '-Wextra', '-Werror', '-pthread',
                '-I' + str(ROOT / 'lib/curl/include'), '-I' + str(ROOT / 'src')]
     command += [str(ROOT / ('src/pc/mod_integrations/' + name)) for name in ('mi_catalog.cpp', 'mi_updates.cpp', 'mi_install.cpp')]
-    command += [str(ROOT / 'tests/mi/maintenance_cli.cpp'), str(miniz),
+    command += [str(ROOT / 'tests/mi/maintenance_cli.cpp'), str(miniz), build_sqlite(directory),
                 '-Wl,--wrap=syscall', '-Wl,--wrap=rename']
     environment = os.environ.copy()
     if bundled_curl:
@@ -131,6 +133,7 @@ def main():
                 mod['versions'].append({'version_id': identity, 'version': label, 'release_date': date, 'resolved': True,
                     'files': [{'file_id': 'primary-' + identity, 'filename': 'pack.zip',
                                'download_url': 'https://example.invalid/' + identity,
+                               'mirror_url': 'https://mods-cdn.sm64cdpy.org/test/' + identity, 'mirror_status': 'available',
                                'role': 'primary', 'recommended': True, 'requires_primary': False}]})
             catalog_path = directory / 'catalog.json'
             catalog_path.write_text(json.dumps(base))

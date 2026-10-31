@@ -33,7 +33,6 @@ struct MiCatalogView {
     bool recoveryStartFailed;
     struct MiCatalogFetchInfo fetch;
     uint64_t revision;
-    struct DjuiText* checkedAt;
     struct DjuiInputbox* search;
     struct DjuiSearchbox* searchbox;
     struct DjuiText* status;
@@ -51,7 +50,6 @@ struct MiCatalogView {
     uint8_t thumbnailPixels[MI_THUMB_BYTES];
     struct DjuiButton* previous;
     struct DjuiButton* next;
-    struct DjuiButton* retry;
     struct DjuiButton* returnButton;
     struct DjuiButton* checkUpdates;
     struct MiUpdates* updates;
@@ -673,12 +671,8 @@ static void mi_view_update(struct MiCatalogView* view) {
     bool ready = mi_catalog_status(view->catalog) == MI_CATALOG_READY;
     const char* message;
     if (view->fetch.running) message = mi_catalog_text(ready ? "UPDATING" : "LOADING");
-    else if (view->fetch.error == MI_FETCH_TLS) message = mi_catalog_text("TLS_ERROR");
-    else if (view->fetch.error == MI_FETCH_HTTP) message = mi_catalog_text("HTTP_ERROR");
-    else if (view->fetch.error == MI_FETCH_INVALID || view->fetch.error == MI_FETCH_UNSUPPORTED) message = mi_catalog_text("INVALID_REMOTE");
-    else if (view->fetch.error == MI_FETCH_STORAGE) message = mi_catalog_text("CACHE_ERROR");
-    else if (view->fetch.error != MI_FETCH_OK || !ready) message = mi_catalog_text("NETWORK_ERROR");
-    else message = mi_catalog_text(view->fetch.fromCache ? "CACHED" : "ONLINE");
+    else if (view->fetch.error != MI_FETCH_OK || !ready) message = mi_catalog_text("BUNDLED_ERROR");
+    else message = mi_catalog_text("BUNDLED");
     char status[768] = { 0 };
     char http[24];
     snprintf(http, sizeof(http), "%ld", view->fetch.httpStatus);
@@ -710,7 +704,7 @@ static void mi_view_update(struct MiCatalogView* view) {
         }
         if (view->fetch.error == MI_FETCH_OK) {
             snprintf(status, sizeof(status), "%s%s%s", summary,
-                view->fetch.fromCache ? " " : "", view->fetch.fromCache ? mi_catalog_text("USING_SAVED") : "");
+                view->fetch.fromCache ? " " : "", view->fetch.fromCache ? mi_catalog_text("BUNDLED") : "");
         } else {
             /* Preserve the download/storage error while reporting a saved-copy comparison. */
             size_t used = strlen(status);
@@ -730,16 +724,6 @@ static void mi_view_update(struct MiCatalogView* view) {
         mi_catalog_text("INSTALL_STORAGE") : mi_install_error_text(recovery.error));
     djui_text_set_text(view->status, status);
 
-    char checked[128] = { 0 };
-    if (ready && view->fetch.savedAt > 0) {
-        time_t timestamp = (time_t)view->fetch.savedAt;
-        struct tm local;
-        char date[40];
-        if (localtime_r(&timestamp, &local) && strftime(date, sizeof(date), "%Y-%m-%d %H:%M", &local))
-            djui_language_replace(mi_catalog_text("LAST_CHECKED"), checked, sizeof(checked), '@', date);
-    }
-    djui_text_set_text(view->checkedAt, checked);
-    djui_base_set_visible(&view->checkedAt->base, checked[0] != '\0' && gDjuiRoot->base.comp.width >= 1500);
     for (size_t slot = 0; slot < MI_PAGE_SIZE; ++slot) {
         size_t index = slot < view->pageSize ? mi_view_match_index(view, view->page * view->pageSize + slot) : SIZE_MAX;
         const struct MiCatalogEntry* entry = mi_catalog_entry(view->catalog, index);
@@ -764,9 +748,7 @@ static void mi_view_update(struct MiCatalogView* view) {
     djui_text_set_text(view->pageText, page);
     djui_base_set_enabled(&view->previous->base, ready && view->page > 0);
     djui_base_set_enabled(&view->next->base, ready && view->page + 1 < pages);
-    djui_text_set_text(view->retry->text, mi_catalog_text(view->fetch.error == MI_FETCH_OK && !recoveryFailed ? "NEWS_REFRESH" : "RETRY"));
-    djui_base_set_enabled(&view->retry->base, !recoveryActive && !view->fetch.running && !view->updatesWanted &&
-        !(view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING));
+
 }
 
 static void mi_search_changed(struct DjuiBase* caller) {
@@ -784,7 +766,7 @@ static void mi_page_changed(struct DjuiBase* caller) {
     mi_view_update(view);
 }
 
-static void mi_begin_request(struct MiCatalogView* view, bool forceRefresh) {
+static void mi_begin_request(struct MiCatalogView* view) {
     mi_updates_invalidate(view);
     mi_catalog_request_close(view->request);
     view->revision = 0;
@@ -793,7 +775,7 @@ static void mi_begin_request(struct MiCatalogView* view, bool forceRefresh) {
     char directory[SYS_MAX_PATH];
     int written = snprintf(directory, sizeof(directory), "%s/mi", fs_writepath);
     view->request = written >= 0 && (size_t)written < sizeof(directory) ?
-        (forceRefresh ? mi_catalog_request_refresh(directory, language) : mi_catalog_request_start(directory, language)) : NULL;
+        mi_catalog_request_start(directory, language) : NULL;
     view->fetch.running = view->request != NULL;
     view->fetch.error = view->request ? MI_FETCH_OK : MI_FETCH_NETWORK;
 }
@@ -828,7 +810,8 @@ static void mi_poll_request(struct DjuiBase* base, UNUSED bool* skip) {
         view->updatesWanted = false; changed = true;
     }
     if (view->installRevision != mi_install_revision()) {
-        mi_updates_invalidate(view); view->installRevision = mi_install_revision(); changed = true;
+        mi_updates_invalidate(view); view->installRevision = mi_install_revision();
+        view->updatesWanted = mi_catalog_status(view->catalog) == MI_CATALOG_READY; changed = true;
     }
     struct MiCatalog* snapshot = NULL;
     struct MiCatalogFetchInfo info;
@@ -836,11 +819,13 @@ static void mi_poll_request(struct DjuiBase* base, UNUSED bool* skip) {
         if (snapshot) {
             mi_updates_invalidate(view);
             mi_catalog_free(view->catalog); view->catalog = snapshot;
+            view->updatesWanted = true;
         }
         if (!info.savedAt && mi_catalog_status(view->catalog) == MI_CATALOG_READY) info.savedAt = view->fetch.savedAt;
         view->fetch = info; view->revision = info.revision; changed = true;
     }
-    if (view->updatesWanted && !view->fetch.running && !mi_install_is_busy()) {
+    if (view->updatesWanted && !view->fetch.running && !mi_install_is_busy() &&
+        !view->recoveryStartFailed && recoveryKnown && recovery.state == MI_INSTALL_COMPLETE) {
         view->updatesWanted = false;
         if (mi_catalog_status(view->catalog) == MI_CATALOG_READY) {
             view->updates = mi_updates_start(fs_get_write_path(""), view->catalog);
@@ -871,24 +856,6 @@ static void mi_check_updates(struct DjuiBase* caller) {
     mi_view_update(view);
 }
 
-/* One explicit action refreshes the catalog, then compares installed receipts. */
-static void mi_retry(struct DjuiBase* caller) {
-    struct MiCatalogView* view = mi_view_for(caller);
-    if (!view || view->fetch.running || view->updatesWanted ||
-        (view->updates && view->updatesInfo.state == MI_UPDATES_RUNNING)) return;
-    struct MiInstallInfo recovery = {0};
-    if (view->recoveryStartFailed || (mi_install_poll(view->recovery, &recovery) &&
-        recovery.state != MI_INSTALL_COMPLETE && !mi_install_active(recovery.state))) {
-        mi_install_close(view->recovery);
-        view->recovery = mi_install_recover_start(fs_get_write_path(""));
-        view->recoveryStartFailed = view->recovery == NULL;
-    }
-    mi_begin_request(view, true);
-    view->updatesWanted = true;
-    view->installRevision = mi_install_revision();
-    mi_view_update(view);
-}
-
 /* Do not let Mods refresh while recovery is moving an installed unit. Network
  * loading remains dismissible once this local recovery operation has finished. */
 static bool mi_catalog_recovery_back(struct DjuiBase* base) {
@@ -905,7 +872,7 @@ struct DjuiPanel* mi_catalog_panel_create(struct DjuiBase* caller) {
     view->recovery = mi_install_recover_start(fs_get_write_path(""));
     view->recoveryStartFailed = view->recovery == NULL;
     view->installRevision = mi_install_revision();
-    mi_begin_request(view, false);
+    mi_begin_request(view);
     struct DjuiThreePanel* panel = mi_workspace(mi_catalog_text("TITLE"), 156, 72);
     panel->base.tag = (s64)(intptr_t)view;
     panel->base.destroy = mi_view_destroy;
@@ -915,23 +882,18 @@ struct DjuiPanel* mi_catalog_panel_create(struct DjuiBase* caller) {
     struct DjuiBase* footer = djui_three_panel_get_footer(panel);
     body->on_child_render = NULL; /* Grid, not vertical flow. */
     struct DjuiSearchbox* search = djui_searchbox_create(header, mi_search_changed);
-    mi_place(&search->base, 0, 48, 0.46f, 52);
+    mi_place(&search->base, 0, 48, 0.68f, 52);
     djui_base_set_size(&search->inputbox->base, 1, 52);
     djui_base_set_size(search->inputbox->base.parent, 1, 52);
     view->search = search->inputbox;
     view->searchbox = search;
     djui_text_set_text(search->text, mi_catalog_text("SEARCH"));
-    view->retry = djui_button_create(header, mi_catalog_text("NEWS_REFRESH"), DJUI_BUTTON_STYLE_NORMAL, mi_retry);
-    mi_place(&view->retry->base, 0.48f, 48, 0.22f, 52);
     view->checkUpdates = djui_button_create(header, mi_catalog_text("NEWS_FILTER"), DJUI_BUTTON_STYLE_NORMAL, mi_check_updates);
     mi_place(&view->checkUpdates->base, 0.72f, 48, 0.28f, 52);
     view->checkUpdates->text->base.on_render_pre = mi_action_label_fit;
     view->status = mi_text(header, mi_catalog_text("LOADING"), 48);
     mi_place(&view->status->base, 0, 104, 1, 52);
     djui_text_set_font_scale(view->status, view->status->font->defaultFontScale * 0.9f);
-    view->checkedAt = mi_text(header, "", 22);
-    mi_place(&view->checkedAt->base, 0.52f, 4, 0.48f, 36);
-    djui_text_set_font_scale(view->checkedAt, view->checkedAt->font->defaultFontScale * 0.95f);
     for (size_t slot = 0; slot < MI_PAGE_SIZE; ++slot) {
         view->rows[slot] = djui_button_create(body, "", DJUI_BUTTON_STYLE_NORMAL, mi_details);
         djui_base_set_size(&view->rows[slot]->base, 1, 96);
@@ -975,7 +937,6 @@ struct DjuiPanel* mi_catalog_panel_create(struct DjuiBase* caller) {
     view->next = djui_button_create(footer, mi_catalog_text("NEXT"), DJUI_BUTTON_STYLE_NORMAL, mi_page_changed);
     mi_place(&view->next->base, 0.77f, 4, 0.23f, 64);
     back->text->base.on_render_pre = mi_action_label_fit;
-    view->retry->text->base.on_render_pre = mi_action_label_fit;
     view->previous->text->base.on_render_pre = mi_action_label_fit;
     view->next->text->base.on_render_pre = mi_action_label_fit;
     mi_view_update(view);

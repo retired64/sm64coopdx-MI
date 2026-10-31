@@ -25,6 +25,9 @@ int main(int argc, char** argv) {
     assert(argc == 2);
     std::ifstream input(argv[1]);
     json sample; input >> sample;
+    auto bundled = mi_catalog_bundled("es");
+    assert(mi_catalog_status(bundled) == MI_CATALOG_READY && mi_catalog_count(bundled) > 1000);
+    mi_catalog_free(bundled);
     auto catalog = mi_catalog_sample();
     assert(mi_catalog_status(catalog) == MI_CATALOG_READY);
     assert(mi_catalog_count(catalog) == 8);
@@ -43,6 +46,7 @@ int main(int argc, char** argv) {
     auto& source = installable["mods"][0]["versions"][0]["files"][0];
     source["filename"] = "test.lua"; source["download_url"] = "https://example.invalid/test.lua";
     source["requires_primary"] = false;
+    source["mirror_url"] = "https://mods-cdn.sm64cdpy.org/test.lua"; source["mirror_status"] = "available";
     catalog = parse(installable);
     assert(mi_catalog_file_count(catalog, 0) > 0);
     assert(mi_catalog_file(catalog, 0, 0)->supported);
@@ -50,11 +54,27 @@ int main(int argc, char** argv) {
     assert(mi_catalog_file(catalog, SIZE_MAX, 0) == nullptr);
     assert(mi_catalog_file(catalog, 0, SIZE_MAX) == nullptr);
     mi_catalog_free(catalog);
+    assert(source["download_url"] == "https://example.invalid/test.lua");
+    for (const char* url : {"", "https://mods.sm64coopdx.com/mod.zip", "https://mods-cdn.sm64cdpy.org.evil.test/mod.zip", "https://mods-cdn.sm64cdpy.org@evil.test/mod.zip", "http://mods-cdn.sm64cdpy.org/mod.zip"}) {
+        source["mirror_url"] = url;
+        catalog = parse(installable); assert(mi_catalog_status(catalog) == MI_CATALOG_READY);
+        assert(!mi_catalog_file(catalog, 0, 0)->supported); mi_catalog_free(catalog);
+    }
+    source["mirror_url"] = "https://mods-cdn.sm64cdpy.org/test.lua";
+    source["mirror_status"] = "missing";
+    catalog = parse(installable); assert(!mi_catalog_file(catalog,0,0)->supported); mi_catalog_free(catalog);
+    source["mirror_status"] = "available"; source["mirror_size_bytes"] = 42;
+    catalog = parse(installable); assert(mi_catalog_file(catalog,0,0)->supported);
+    assert(std::strcmp(mi_catalog_file(catalog,0,0)->url,"https://mods-cdn.sm64cdpy.org/test.lua")==0);
+    assert(!mi_catalog_file(catalog,0,0)->mirror[0] && mi_catalog_file(catalog,0,0)->size==42);mi_catalog_free(catalog);
+    installable["mods"][0]["category"] = "DynOS";
+    catalog = parse(installable); assert(!mi_catalog_file(catalog,0,0)->supported); mi_catalog_free(catalog);
+    installable["mods"][0]["category"] = "utility";
     source["requires_primary"] = true;
     catalog = parse(installable); assert(!mi_catalog_file(catalog, 0, 0)->supported); mi_catalog_free(catalog);
     source["requires_primary"] = false; source["sha256"] = "invalid";
     catalog = parse(installable); assert(!mi_catalog_file(catalog, 0, 0)->supported); mi_catalog_free(catalog);
-    source["sha256"] = nullptr; source["download_url"] = "https://example.invalid/" + std::string(2100, 'x');
+    source["sha256"] = nullptr; source["mirror_url"] = "https://mods-cdn.sm64cdpy.org/" + std::string(2100, 'x');
     catalog = parse(installable); assert(!mi_catalog_file(catalog, 0, 0)->supported); mi_catalog_free(catalog);
 
     auto images = sample; images["mods"][0]["icon_url"] = "https://example.invalid/icon.png";

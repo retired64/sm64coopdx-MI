@@ -113,7 +113,7 @@ int transfer_progress(void* context,curl_off_t total,curl_off_t bytes,curl_off_t
 }
 void download(MiInstall* op,const std::string& url,const fs::path& target) {
     bool loopback=url.compare(0,17,"http://127.0.0.1:")==0;
-    require(loopback||url.compare(0,8,"https://")==0,MI_INSTALL_UNSAFE);
+    require(loopback||url.compare(0,30,"https://mods-cdn.sm64cdpy.org/")==0,MI_INSTALL_UNSAFE);
     require(mi_curl_init()==CURLE_OK,MI_INSTALL_NETWORK);
     update(op,MI_INSTALL_DOWNLOADING);
     Descriptor fd(open(target.c_str(),O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW,0600));require(fd.fd>=0,MI_INSTALL_STORAGE);
@@ -127,7 +127,7 @@ void download(MiInstall* op,const std::string& url,const fs::path& target) {
     curl_easy_setopt(handle.get(),CURLOPT_NOPROGRESS,0L);curl_easy_setopt(handle.get(),CURLOPT_NOSIGNAL,1L);
     curl_easy_setopt(handle.get(),CURLOPT_CONNECTTIMEOUT,15L);curl_easy_setopt(handle.get(),CURLOPT_TIMEOUT,1800L);
     curl_easy_setopt(handle.get(),CURLOPT_LOW_SPEED_LIMIT,128L);curl_easy_setopt(handle.get(),CURLOPT_LOW_SPEED_TIME,30L);
-    curl_easy_setopt(handle.get(),CURLOPT_FOLLOWLOCATION,1L);curl_easy_setopt(handle.get(),CURLOPT_MAXREDIRS,5L);
+    curl_easy_setopt(handle.get(),CURLOPT_FOLLOWLOCATION,loopback?1L:0L);curl_easy_setopt(handle.get(),CURLOPT_MAXREDIRS,5L);
     curl_easy_setopt(handle.get(),CURLOPT_MAXFILESIZE_LARGE,curl_off_t(MAX_DOWNLOAD));
     curl_easy_setopt(handle.get(),CURLOPT_FAILONERROR,1L);curl_easy_setopt(handle.get(),CURLOPT_SSL_VERIFYPEER,1L);curl_easy_setopt(handle.get(),CURLOPT_SSL_VERIFYHOST,2L);
 #pragma GCC diagnostic push
@@ -526,11 +526,7 @@ void* work(void* context) {
             std::string name=op->source.filename;require(component(name),MI_INSTALL_UNSAFE);
             std::string temp=(mi/(op->updating?"update-XXXXXX":"stage-XXXXXX")).string();require(mkdtemp(&temp[0])!=nullptr,MI_INSTALL_STORAGE);stage=temp;
             fs::path payload=stage/"download";
-            try{download(op,op->source.url,payload);}catch(const Failure& failure){
-                bool fallback=failure.code==MI_INSTALL_NETWORK||failure.code==MI_INSTALL_HTTP||failure.code==MI_INSTALL_TLS;
-                if(!fallback||!op->source.mirror[0]||op->cancelled)throw;
-                fs::remove(payload);download(op,op->source.mirror,payload);
-            }
+            download(op,op->source.url,payload);
             if(op->source.size)require(fs::file_size(payload)==op->source.size,MI_INSTALL_INTEGRITY);
             // Download cap is larger than individual extracted-file cap.
             if(op->source.sha256[0]){

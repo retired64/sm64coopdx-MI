@@ -99,6 +99,23 @@ try:
             assert not list((game / 'mi').glob('stage-*')), result
             return game, result
 
+        # Defense in depth: unsupported hosts never connect, even with a fallback supplied.
+        for index, url in enumerate(['https://mods.sm64coopdx.com/test.lua',
+                                     'https://mods-cdn.sm64cdpy.org.evil.test/test.lua',
+                                     'http://mods-cdn.sm64cdpy.org/test.lua']):
+            game = games / ('blocked-source-' + str(index))
+            game.mkdir()
+            result = json.loads(subprocess.check_output([str(executable), str(game), url, 'test.lua',
+                'normal', '', f'http://127.0.0.1:{server.server_port}/lua'], text=True, env=environment, timeout=10))
+            assert result['state'] == 6 and result['error'] == 6 and not result['saw_download'], result
+            assert not list((game / 'mi').glob('stage-*')), result
+        game = games / 'no-fallback'
+        game.mkdir()
+        result = json.loads(subprocess.check_output([str(executable), str(game),
+            f'http://127.0.0.1:{server.server_port}/404', 'test.lua', 'normal', '',
+            f'http://127.0.0.1:{server.server_port}/lua'], text=True, env=environment, timeout=10))
+        assert result['state'] == 6 and result['error'] == 2 and result['http'] == 404, result
+
         for path, filename, destination in [('/lua', 'boo2.lua', 'boo2.lua'), ('/root', 'test.zip', 'test'), ('/wrapper', 'test.zip', 'test'), ('/single', 'test.zip', 'boo2.lua')]:
             game, result = run(path, filename)
             assert result['state'] == 5 and result['destination'] == destination, result
@@ -175,14 +192,14 @@ try:
         _, result = run('/lua', 'test.lua', game.name)
         assert result['error'] == 11 and journal.read_text() == '{invalid', result
         if args.live:
-            with urllib.request.urlopen('https://raw.githubusercontent.com/retired64/sm64cdpy.releases/main/db/database_sm64coopdx.json', timeout=40) as response:
+            with urllib.request.urlopen('https://raw.githubusercontent.com/retired64/sm64cdpy.releases/r2-phase6-flutter-fallback/assets/db/database_sm64coopdx.json', timeout=40) as response:
                 catalog = json.load(response)
-            sources = [f for m in catalog['mods'] for v in m.get('versions', []) if v.get('resolved') for f in v.get('files', []) if f.get('filename', '').endswith('.lua') and not f.get('requires_primary') and f.get('download_url', '').startswith('https://')]
+            sources = [f for m in catalog['mods'] for v in m.get('versions', []) if v.get('resolved') for f in v.get('files', []) if f.get('filename', '').endswith('.lua') and not f.get('requires_primary') and f.get('mirror_status') == 'available' and f.get('mirror_url', '').startswith('https://mods-cdn.sm64cdpy.org/')]
             assert sources, 'No standalone Lua fixture available in live catalog'
-            source = min(sources, key=lambda f: f.get('size_bytes') or 1000000000)
+            source = min(sources, key=lambda f: f.get('mirror_size_bytes') or 1000000000)
             game = games / 'https-live'
             game.mkdir()
-            result = json.loads(subprocess.check_output([str(executable), str(game), source['download_url'], source['filename'], 'normal', source.get('sha256') or ''], env=environment, text=True, timeout=60))
+            result = json.loads(subprocess.check_output([str(executable), str(game), source['mirror_url'], source['filename'], 'normal', source.get('sha256') or ''], env=environment, text=True, timeout=60))
             assert result['state'] == 5, result
             print('Real catalog HTTPS Lua installed in temporary root:', source['filename'], result)
         print('MI installer: SHA vectors, Lua/ZIP/wrappers, receipts, idempotence, unsafe paths/links/duplicates, corruption, HTTP/truncation, hash, collision, cancel, busy, local modification and interrupted-install recovery passed.')

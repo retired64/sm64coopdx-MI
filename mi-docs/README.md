@@ -26,6 +26,16 @@ La documentación heredada del juego permanece en sus rutas originales.
 
 ## Integración vigente
 
+- [INCLUDED_ONLY_BUILD.md](INCLUDED_ONLY_BUILD.md): fuente incluida exclusiva, sin
+  Buscar novedades ni lectura de caché remota.
+
+- [CATALOG_DATABASE.md](CATALOG_DATABASE.md): catálogo SQLite incluido, mediciones,
+  contrato remoto JSON y frontera de la migración.
+- [SQLITE_DEPENDENCY.md](SQLITE_DEPENDENCY.md): dependencia fija y procedencia.
+
+- [CDN_ONLY_CATALOG.md](CDN_ONLY_CATALOG.md): fuente JSON personalizada, descargas
+  exclusivas del CDN y límites de instalación DynOS.
+
 - [CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md): actualización individual,
   respaldo, rollback y recuperación de diarios.
 
@@ -47,6 +57,9 @@ La documentación heredada del juego permanece en sus rutas originales.
   desplazamiento de menús y respaldo de traducciones.
 
 ## Planes pendientes
+
+- [REMOTE_DATABASE_PLAN.md](REMOTE_DATABASE_PLAN.md): manifiesto público, DB por
+  revisión, promoción segura y futuro cliente de actualización.
 
 - [NATIVE_PORTABILITY_PLAN.md](NATIVE_PORTABILITY_PLAN.md): propuesta de motor
   C++ compartido y aplicación independiente para Linux y Windows, fases y pruebas.
@@ -70,3 +83,15 @@ llevar al documento vigente o al commit histórico correspondiente.
 
 Reorganización: 2026-10-29. Se trasladan los cuatro documentos MI de la raíz y los
 cinco documentos de docs/mi/ a esta carpeta. No cambia código ni configuración.
+
+
+## Catálogo incluido — 2026-10-30
+
+La apertura usa caché o catálogo incluido sin descargar JSON; solo Buscar novedades
+consulta el repositorio. Contrato: [BUNDLED_CATALOG.md](BUNDLED_CATALOG.md).
+
+
+## Versionado MI y catálogo incluido
+
+Regla vigente: [VERSIONING_AND_RELEASES.md](VERSIONING_AND_RELEASES.md). Conservar versionCode y firma upstream;
+personalizar solo versionName. Catálogo incluido actualizado: 1,311 mods.

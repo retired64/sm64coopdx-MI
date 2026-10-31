@@ -41,8 +41,9 @@ accesibilidad están implementados. Instalación Lua/ZIP y recibos schema 1 est�
 Consulta de actualizaciones de solo lectura y miniaturas implementadas localmente:
 ver mi-docs/CATALOG_UPDATES.md y mi-docs/CATALOG_THUMBNAILS.md.
 Actualización individual transaccional y recuperación implementadas localmente:
-ver mi-docs/CATALOG_REPLACEMENT.md. Asociaciones de mods previos, Update all, SQLite
-y OTA propia siguen pendientes. Ver mi-docs/CATALOG_INSTALLATION.md. Verificar ese
+ver mi-docs/CATALOG_REPLACEMENT.md. SQLite incluido está implementado localmente;
+el build vigente usa esa copia exclusivamente, sin Buscar novedades ni caché remota.
+Asociaciones de mods previos, Update all, DB remota y OTA propia siguen pendientes. Ver mi-docs/CATALOG_INSTALLATION.md. Verificar ese
 estado al retomar trabajo y actualizarlo cuando realmente cambie.
 
 ### Frontera pública de datos
@@ -371,3 +372,37 @@ Una tarea se considera terminada cuando el alcance autorizado está resuelto:
 Si un entorno impide una comprobación, continuar el resto del trabajo útil y
 reportar exactamente qué no se verificó. No rebautizar trabajo incompleto como
 validado, ni detener una implementación autorizada en una propuesta superficial.
+
+## Fuente CDN exclusiva — 2026-10-30
+
+Contrato vigente: mi-docs/CDN_ONLY_CATALOG.md. No restablecer main/db ni fallback
+a descargas oficiales. Conservar IDs/recibos, namespace de caché CDN y rechazo
+de instalaciones sin mirror disponible. DynOS requiere su implementación propia.
+
+## Catálogo incluido — 2026-10-30
+
+Ver mi-docs/BUNDLED_CATALOG.md. Apertura local sin red de JSON; consulta solo por
+acción explícita. Fuente pública assets/mi/catalog.json, salida generada
+mi_catalog_bundled.inc y verificación del generador --check. Conservar tests.
+
+## Catálogo SQLite incluido — 2026-10-30
+
+Ver mi-docs/CATALOG_DATABASE.md y SQLITE_DEPENDENCY.md. JSON permanece como
+contrato remoto/caché; la copia incluida es SQLite de solo lectura. Generador
+build_catalog_db.py, lector mi_catalog_database.inc y wrapper mi_sqlite.c deben
+conservar el mismo DTO que JSON. test_catalog.py incluye igualdad EN/ES/PT y
+fallos de DB; tests nativos enlazan la misma dependencia fija del juego. No
+confundir benchmark CLI con FPS ni declarar migrada la caché remota.
+
+## Modo incluido exclusivo vigente — 2026-10-30
+
+Ver mi-docs/INCLUDED_ONLY_BUILD.md. El producto no lee caché remota ni descarga
+catálogo; ambas entradas start/refresh usan la DB incluida. No restaurar Buscar
+novedades hasta implementar y validar el plan de REMOTE_DATABASE_PLAN.md.
+Actualizaciones es un filtro local y debe describirse como tal.
+
+
+## Versionado MI y catálogo incluido
+
+Regla vigente: [mi-docs/VERSIONING_AND_RELEASES.md](mi-docs/VERSIONING_AND_RELEASES.md). Conservar versionCode y firma upstream;
+personalizar solo versionName. Catálogo incluido actualizado: 1,311 mods.

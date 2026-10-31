@@ -146,3 +146,10 @@ contenido de nuevo, sustituyendo la unidad con respaldo y recuperación. La
 consulta sigue siendo de solo lectura y no certifica integridad. Se comprueban
 diarios al abrir el catálogo en una operación separada sin descarga. Ver contrato
 vigente: [CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md). Actualizar todos sigue pendiente.
+
+
+## Fuente CDN exclusiva — 2026-10-30
+
+Se sustituye el origen anterior y la política de fallback por el catálogo
+personalizado y mirror como única descarga. Contrato y límite DynOS:
+[CDN_ONLY_CATALOG.md](CDN_ONLY_CATALOG.md). Las notas anteriores conservan historia.

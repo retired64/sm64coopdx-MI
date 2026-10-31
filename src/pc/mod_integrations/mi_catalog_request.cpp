@@ -20,7 +20,7 @@
 
 namespace {
 constexpr size_t MAX_BYTES = 16 * 1024 * 1024;
-constexpr const char* CATALOG_URL = "https://raw.githubusercontent.com/retired64/sm64cdpy.releases/main/db/database_sm64coopdx.json";
+constexpr const char* CATALOG_URL = "https://raw.githubusercontent.com/retired64/sm64cdpy.releases/r2-phase6-flutter-fallback/assets/db/database_sm64coopdx.json";
 std::mutex commitMutex;
 std::atomic<uint64_t> newestGeneration{0};
 using CatalogPtr = std::unique_ptr<MiCatalog, decltype(&mi_catalog_free)>;
@@ -35,6 +35,7 @@ struct MiCatalogRequest {
     std::string directory, language, url;
     uint64_t generation;
     bool forceRefresh = true;
+    bool bundledOnly = false;
     ~MiCatalogRequest() { mi_catalog_free(pending); }
 };
 
@@ -123,9 +124,9 @@ bool save_cache(MiCatalogRequest* request, const std::string& bytes, int64_t now
     if (mkdir(request->directory.c_str(), 0700) != 0 && errno != EEXIST) return false;
     struct stat directory;
     if (lstat(request->directory.c_str(), &directory) != 0 || !S_ISDIR(directory.st_mode)) return false;
-    const std::string primary = request->directory + "/catalog-v2.cache";
+    const std::string primary = request->directory + "/catalog-cdn-v2.cache";
     Cache old = read_cache(primary, request->language);
-    if (old.catalog && !atomic_cache(request->directory + "/catalog-v2.last-good", old.body,
+    if (old.catalog && !atomic_cache(request->directory + "/catalog-cdn-v2.last-good", old.body,
                                     old.savedAt, request->generation)) return false;
     if (request->cancelled || request->generation != newestGeneration.load()) return false;
     return atomic_cache(primary, bytes, now, request->generation);
@@ -203,21 +204,36 @@ MiCatalogFetchError fetch(MiCatalogRequest* request, std::string& body, long& ht
 
 void* work(void* context) {
     auto* request = static_cast<MiCatalogRequest*>(context);
-    bool cached = false;
+    bool cached = false, savedCopy = false;
     int64_t savedAt = 0;
     try {
-        Cache cache = read_cache(request->directory + "/catalog-v2.cache", request->language);
-        if (!cache.catalog) cache = read_cache(request->directory + "/catalog-v2.last-good", request->language);
-        const size_t previousCount = mi_catalog_count(cache.catalog.get());
+        // Product mode: the APK database is the sole catalog authority. No cache IO or fetch.
+        if (request->bundledOnly) {
+            CatalogPtr catalog(mi_catalog_bundled(request->language.c_str()), mi_catalog_free);
+            bool ready = mi_catalog_status(catalog.get()) == MI_CATALOG_READY;
+            publish(request, ready ? catalog.release() : nullptr, false, true, false, 0,
+                ready ? MI_FETCH_OK : MI_FETCH_INVALID);
+            release(request);
+            return nullptr;
+        }
+        Cache cache = read_cache(request->directory + "/catalog-cdn-v2.cache", request->language);
+        if (!cache.catalog) cache = read_cache(request->directory + "/catalog-cdn-v2.last-good", request->language);
+        size_t previousCount = mi_catalog_count(cache.catalog.get());
         if (cache.catalog && !request->cancelled) {
-            cached = true;
+            cached = true; savedCopy = true;
             savedAt = cache.savedAt;
             publish(request, cache.catalog.release(), true, true, true, savedAt, MI_FETCH_OK);
         }
         std::string().swap(cache.body);
-        const int64_t age = static_cast<int64_t>(time(nullptr)) - savedAt;
-        if (cached && !request->forceRefresh && age >= 0 && age < 15 * 60) {
-            publish(request, nullptr, false, true, true, savedAt, MI_FETCH_OK);
+        if (!cached && request->url == CATALOG_URL && !request->cancelled) {
+            CatalogPtr bundled(mi_catalog_bundled(request->language.c_str()), mi_catalog_free);
+            if (mi_catalog_status(bundled.get()) == MI_CATALOG_READY) {
+                previousCount = mi_catalog_count(bundled.get()); cached = true;
+                publish(request, bundled.release(), request->forceRefresh, true, false, 0, MI_FETCH_OK);
+            }
+        }
+        if (!request->forceRefresh) {
+            publish(request, nullptr, false, cached, savedCopy, savedAt, cached ? MI_FETCH_OK : MI_FETCH_INVALID);
         } else if (!request->cancelled) {
             std::string body;
             long http = 0;
@@ -235,23 +251,24 @@ void* work(void* context) {
                 if (!request->cancelled)
                     publish(request, catalog.release(), false, false, saved, now, saved ? MI_FETCH_OK : MI_FETCH_STORAGE, http);
             } else {
-                publish(request, nullptr, false, cached, cached, savedAt, error, http);
+                publish(request, nullptr, false, cached, savedCopy, savedAt, error, http);
             }
         }
     } catch (...) {
-        publish(request, nullptr, false, cached, cached, savedAt, MI_FETCH_NETWORK);
+        publish(request, nullptr, false, cached, savedCopy, savedAt, MI_FETCH_NETWORK);
     }
     release(request);
     return nullptr;
 }
 }
 
-static struct MiCatalogRequest* start_request(const char* directory, const char* language, const char* url, bool forceRefresh) {
+static struct MiCatalogRequest* start_request(const char* directory, const char* language, const char* url, bool forceRefresh, bool bundledOnly = false) {
     if (!directory || !url) return nullptr;
     MiCatalogRequest* request = new (std::nothrow) MiCatalogRequest;
     if (!request) return nullptr;
     try {
         request->forceRefresh = forceRefresh;
+        request->bundledOnly = bundledOnly;
         request->directory = directory;
         request->language = language ? language : "en";
         request->url = url;
@@ -271,7 +288,7 @@ static struct MiCatalogRequest* start_request(const char* directory, const char*
     return request;
 }
 extern "C" struct MiCatalogRequest* mi_catalog_request_start(const char* directory, const char* language) {
-    return start_request(directory, language, CATALOG_URL, false);
+    return start_request(directory, language, CATALOG_URL, false, true);
 }
 extern "C" bool mi_catalog_request_poll(struct MiCatalogRequest* request, uint64_t lastRevision,
                                          struct MiCatalog** snapshot, struct MiCatalogFetchInfo* info) {
@@ -290,7 +307,7 @@ extern "C" void mi_catalog_request_close(struct MiCatalogRequest* request) {
 }
 
 extern "C" struct MiCatalogRequest* mi_catalog_request_refresh(const char* directory, const char* language) {
-    return start_request(directory, language, CATALOG_URL, true);
+    return start_request(directory, language, CATALOG_URL, false, true);
 }
 extern "C" struct MiCatalogRequest* mi_catalog_request_start_url(const char* directory, const char* language, const char* url) {
     return start_request(directory, language, url, true);

@@ -21,7 +21,9 @@ struct MiCatalogFetchInfo {
     enum MiCatalogFetchError error;
 };
 /* cacheDirectory must be a dedicated MI directory under the game's write path.
- * URL is fixed in production; override is used only by native integration tests. */
+ * Current product mode: start and refresh load only the bundled SQLite database,
+ * ignoring remote caches and doing no catalog network IO. Explicit URL override
+ * is reserved for transport regression tests, not wired to the product UI. */
 struct MiCatalogRequest* mi_catalog_request_start(const char* cacheDirectory, const char* language);
 struct MiCatalogRequest* mi_catalog_request_refresh(const char* cacheDirectory, const char* language);
 struct MiCatalogRequest* mi_catalog_request_start_url(const char* cacheDirectory, const char* language, const char* url);

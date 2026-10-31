@@ -258,3 +258,10 @@ nuevos registran directories como extensión opcional de schema 1. Recuperación
 al abrir el catálogo no descarga archivos. Contrato vigente y limitaciones:
 [CATALOG_REPLACEMENT.md](CATALOG_REPLACEMENT.md). Las notas anteriores que dejaban
 pendiente todo reemplazo corresponden a la etapa previa.
+
+
+## Fuente CDN exclusiva — 2026-10-30
+
+Se sustituye el origen anterior y la política de fallback por el catálogo
+personalizado y mirror como única descarga. Contrato y límite DynOS:
+[CDN_ONLY_CATALOG.md](CDN_ONLY_CATALOG.md). Las notas anteriores conservan historia.

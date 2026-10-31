@@ -103,3 +103,32 @@ SHA-256: 117ad63202cfd2c396679e331403231b64b4fe8593cdce7c632d1b8ff1c8961d.
 El catálogo remoto usa ahora un espacio amplio, navegación fija y filas por
 página adaptadas a la altura. Véase [CATALOG_WORKSPACE.md](CATALOG_WORKSPACE.md).
 El servicio de red, la caché y las reglas de instalación no cambian.
+
+
+## Fuente CDN exclusiva — 2026-10-30
+
+Se sustituye el origen anterior y la política de fallback por el catálogo
+personalizado y mirror como única descarga. Contrato y límite DynOS:
+[CDN_ONLY_CATALOG.md](CDN_ONLY_CATALOG.md). Las notas anteriores conservan historia.
+
+
+## Catálogo incluido — 2026-10-30
+
+La apertura usa caché o catálogo incluido sin descargar JSON; solo Buscar novedades
+consulta el repositorio. Contrato: [BUNDLED_CATALOG.md](BUNDLED_CATALOG.md).
+
+
+## Catálogo incluido SQLite — 2026-10-30
+
+La copia incluida pasa a una base SQLite de solo lectura. JSON sigue siendo el
+contrato remoto y el formato de caché actual. Arquitectura, límites y pruebas:
+[CATALOG_DATABASE.md](CATALOG_DATABASE.md). Esta nota supera la representación
+JSON literal incluida descrita anteriormente, sin cambiar sus IDs.
+
+
+## Modo incluido exclusivo — 2026-10-30
+
+Este build ignora cachés remotas y no ofrece Buscar novedades. Fuente única: DB
+incluida en el APK. Estado vigente: [INCLUDED_ONLY_BUILD.md](INCLUDED_ONLY_BUILD.md).
+Plan posterior: [REMOTE_DATABASE_PLAN.md](REMOTE_DATABASE_PLAN.md). Las notas
+anteriores de refresco remoto describen una etapa previa.

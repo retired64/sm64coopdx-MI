@@ -193,3 +193,9 @@ La puerta manual añade python3 tools/mi/test_replacement.py. Usa raíces y serv
 HTTP temporales, enlaza módulos reales y simula fallos solo en su ejecutable de
 tests. No requiere ROM ni acceso al catálogo público. Configurar el paso no
 ejecuta Actions: la comprobación Ubuntu/Gradle remota sigue pendiente.
+
+
+## Versionado MI y catálogo incluido
+
+Regla vigente: [VERSIONING_AND_RELEASES.md](VERSIONING_AND_RELEASES.md). Conservar versionCode y firma upstream;
+personalizar solo versionName. Catálogo incluido actualizado: 1,311 mods.

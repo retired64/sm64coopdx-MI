@@ -24,10 +24,12 @@ release decisions remain with the maintainer.
 - An in-game catalog with search, pagination, mod details, and thumbnails.
 - A readable, responsive layout that respects the game's menu scale.
 - English, Spanish, and Portuguese MI labels, with compiled fallback translations.
-- A remote JSON catalog with a validated local cache for offline browsing.
+- A read-only SQLite catalog included in the APK as the only catalog source.
+  This build has no Check for news action and ignores older remote catalog caches.
+- Mod downloads exclusively from the MI CDN; no official-site download fallback.
 - Direct installation of standalone Lua files and ZIP packages, with real
   download/install progress and cancellation before replacement begins.
-- Update checks for mods associated through MI installation receipts.
+- Local version comparisons against the included catalog for MI-managed mods.
 - Individual updates that preserve the installed destination, check local
   changes, and use a backup and transaction journal for rollback and recovery.
 
@@ -42,6 +44,7 @@ the latest changes still need the full physical-device validation described in
 ## Screenshots
 
 Captured on Android with the Spanish interface. Open an image to view it at full size.
+These screenshots show an earlier build; the current included-only build omits Check for news.
 
 ### Native Mods menu
 
@@ -63,7 +66,8 @@ Captured on Android with the Spanish interface. Open an image to view it at full
 4. Return to the game's Mods screen, refresh its list, and use its usual controls
    to activate the mod.
 
-Use the catalog's update check to look for newer versions of MI-managed mods.
+The local Updates filter compares MI-managed mods against the included catalog;
+this build does not check the repository for newer catalog data.
 Updates are explicit user actions. MI checks receipts and file hashes rather
 than relying on a version label inside `main.lua`. Local edits or conflicting
 files can block replacement to protect existing content.
@@ -74,8 +78,8 @@ unexpected files or modified backups, it preserves evidence and reports the
 problem instead of forcing an overwrite.
 
 Currently supported installation inputs are **ZIP and standalone Lua**.
-RAR/7z extraction, manual association of existing mods, Update all, a database
-catalog format, and a standalone desktop application remain future work.
+DynOS installation, RAR/7z extraction, manual association of existing mods, Update all, remote SQLite
+catalog updates, and a standalone desktop application remain future work.
 
 ## APKs, builds, and future releases
 
@@ -147,6 +151,10 @@ Most engineering notes are currently written in Spanish.
 - [Rules and integration contracts](mi-docs/RULES.md).
 - [Upstream setup](mi-docs/UPSTREAM_SETUP.md) and
   [stable Android synchronization](mi-docs/MANTENER-UPDATES.md).
+- [Included-only build](mi-docs/INCLUDED_ONLY_BUILD.md) and
+  [future remote database plan](mi-docs/REMOTE_DATABASE_PLAN.md).
+- [CDN-only catalog policy](mi-docs/CDN_ONLY_CATALOG.md).
+- [Bundled SQLite catalog and performance measurements](mi-docs/CATALOG_DATABASE.md).
 - [Installation](mi-docs/CATALOG_INSTALLATION.md),
   [update detection](mi-docs/CATALOG_UPDATES.md), and
   [replacement, rollback, and recovery](mi-docs/CATALOG_REPLACEMENT.md).

@@ -1,0 +1,335 @@
+{
+  "experimental": true,
+  "equivalent_current_dtos_es": true,
+  "rounds": 9,
+  "sqlite_version": "3.54.1",
+  "source_sha256": "a20b2df68d28e46425a0a74510535b8dfd3986335ab1580dcfb29855000a9184",
+  "sqlite_provider": "game-object",
+  "reader_sha256": "b044f7825ff7a62137d0ee8b916e3c6d809d8b1186451d07e11dda7e252b7192",
+  "bytes": {
+    "json": 3239458,
+    "sqlite": 2994176,
+    "json_gzip": 867516,
+    "sqlite_gzip": 919635
+  },
+  "median": {
+    "json-bundled": {
+      "load_ms": 252.222,
+      "query_ms": 3.03234,
+      "peak_kib": 39824
+    },
+    "json": {
+      "load_ms": 321.381,
+      "query_ms": 3.03855,
+      "peak_kib": 39764
+    },
+    "sqlite-full": {
+      "load_ms": 84.5156,
+      "query_ms": 3.05196,
+      "peak_kib": 31348
+    },
+    "sqlite-bundled": {
+      "load_ms": 89.7929,
+      "query_ms": 3.02695,
+      "peak_kib": 33700
+    },
+    "sqlite-lazy": {
+      "load_ms": 1.1438,
+      "query_ms": 8.65367,
+      "peak_kib": 7412
+    }
+  },
+  "samples": {
+    "json-bundled": [
+      {
+        "load_ms": 263.831,
+        "query_ms": 3.03602,
+        "peak_kib": 39748,
+        "mods": 1308
+      },
+      {
+        "load_ms": 249.606,
+        "query_ms": 3.03234,
+        "peak_kib": 39904,
+        "mods": 1308
+      },
+      {
+        "load_ms": 252.222,
+        "query_ms": 3.02638,
+        "peak_kib": 39824,
+        "mods": 1308
+      },
+      {
+        "load_ms": 251.401,
+        "query_ms": 3.06072,
+        "peak_kib": 39752,
+        "mods": 1308
+      },
+      {
+        "load_ms": 262.433,
+        "query_ms": 3.08463,
+        "peak_kib": 39900,
+        "mods": 1308
+      },
+      {
+        "load_ms": 269.983,
+        "query_ms": 3.05967,
+        "peak_kib": 39756,
+        "mods": 1308
+      },
+      {
+        "load_ms": 246.046,
+        "query_ms": 3.00217,
+        "peak_kib": 39880,
+        "mods": 1308
+      },
+      {
+        "load_ms": 250.089,
+        "query_ms": 3.01548,
+        "peak_kib": 39808,
+        "mods": 1308
+      },
+      {
+        "load_ms": 269.545,
+        "query_ms": 2.99512,
+        "peak_kib": 39980,
+        "mods": 1308
+      }
+    ],
+    "json": [
+      {
+        "load_ms": 364.56,
+        "query_ms": 3.3588,
+        "peak_kib": 39624,
+        "mods": 1308
+      },
+      {
+        "load_ms": 318.37,
+        "query_ms": 3.02733,
+        "peak_kib": 39756,
+        "mods": 1308
+      },
+      {
+        "load_ms": 321.083,
+        "query_ms": 3.13248,
+        "peak_kib": 39852,
+        "mods": 1308
+      },
+      {
+        "load_ms": 321.381,
+        "query_ms": 3.02646,
+        "peak_kib": 39760,
+        "mods": 1308
+      },
+      {
+        "load_ms": 341.977,
+        "query_ms": 3.14173,
+        "peak_kib": 39824,
+        "mods": 1308
+      },
+      {
+        "load_ms": 351.275,
+        "query_ms": 3.21153,
+        "peak_kib": 39896,
+        "mods": 1308
+      },
+      {
+        "load_ms": 308.335,
+        "query_ms": 2.98902,
+        "peak_kib": 39764,
+        "mods": 1308
+      },
+      {
+        "load_ms": 320.588,
+        "query_ms": 3.01043,
+        "peak_kib": 39984,
+        "mods": 1308
+      },
+      {
+        "load_ms": 323.365,
+        "query_ms": 3.03855,
+        "peak_kib": 39744,
+        "mods": 1308
+      }
+    ],
+    "sqlite-full": [
+      {
+        "load_ms": 129.676,
+        "query_ms": 3.32985,
+        "peak_kib": 31244,
+        "mods": 1308
+      },
+      {
+        "load_ms": 85.2186,
+        "query_ms": 3.09839,
+        "peak_kib": 31276,
+        "mods": 1308
+      },
+      {
+        "load_ms": 82.5298,
+        "query_ms": 3.03163,
+        "peak_kib": 31372,
+        "mods": 1308
+      },
+      {
+        "load_ms": 84.5156,
+        "query_ms": 3.01984,
+        "peak_kib": 31324,
+        "mods": 1308
+      },
+      {
+        "load_ms": 90.8316,
+        "query_ms": 3.08341,
+        "peak_kib": 31348,
+        "mods": 1308
+      },
+      {
+        "load_ms": 129.194,
+        "query_ms": 3.06656,
+        "peak_kib": 31352,
+        "mods": 1308
+      },
+      {
+        "load_ms": 82.3686,
+        "query_ms": 2.99373,
+        "peak_kib": 31384,
+        "mods": 1308
+      },
+      {
+        "load_ms": 79.5505,
+        "query_ms": 3.011,
+        "peak_kib": 31380,
+        "mods": 1308
+      },
+      {
+        "load_ms": 78.7336,
+        "query_ms": 3.05196,
+        "peak_kib": 31296,
+        "mods": 1308
+      }
+    ],
+    "sqlite-bundled": [
+      {
+        "load_ms": 89.7929,
+        "query_ms": 3.02695,
+        "peak_kib": 33692,
+        "mods": 1308
+      },
+      {
+        "load_ms": 88.3767,
+        "query_ms": 3.02775,
+        "peak_kib": 33700,
+        "mods": 1308
+      },
+      {
+        "load_ms": 97.2333,
+        "query_ms": 3.2028,
+        "peak_kib": 33636,
+        "mods": 1308
+      },
+      {
+        "load_ms": 88.3227,
+        "query_ms": 2.99616,
+        "peak_kib": 33784,
+        "mods": 1308
+      },
+      {
+        "load_ms": 102.494,
+        "query_ms": 3.01137,
+        "peak_kib": 33664,
+        "mods": 1308
+      },
+      {
+        "load_ms": 95.0038,
+        "query_ms": 3.13234,
+        "peak_kib": 33740,
+        "mods": 1308
+      },
+      {
+        "load_ms": 87.6404,
+        "query_ms": 2.99607,
+        "peak_kib": 33788,
+        "mods": 1308
+      },
+      {
+        "load_ms": 88.5554,
+        "query_ms": 3.01984,
+        "peak_kib": 33760,
+        "mods": 1308
+      },
+      {
+        "load_ms": 97.8648,
+        "query_ms": 3.04966,
+        "peak_kib": 33648,
+        "mods": 1308
+      }
+    ],
+    "sqlite-lazy": [
+      {
+        "load_ms": 1.31766,
+        "query_ms": 8.6913,
+        "peak_kib": 7432,
+        "mods": 1308
+      },
+      {
+        "load_ms": 1.15104,
+        "query_ms": 8.72956,
+        "peak_kib": 7372,
+        "mods": 1308
+      },
+      {
+        "load_ms": 0.946303,
+        "query_ms": 8.65367,
+        "peak_kib": 7440,
+        "mods": 1308
+      },
+      {
+        "load_ms": 1.17682,
+        "query_ms": 8.59488,
+        "peak_kib": 7476,
+        "mods": 1308
+      },
+      {
+        "load_ms": 1.08583,
+        "query_ms": 9.06308,
+        "peak_kib": 7476,
+        "mods": 1308
+      },
+      {
+        "load_ms": 1.10672,
+        "query_ms": 8.67846,
+        "peak_kib": 7356,
+        "mods": 1308
+      },
+      {
+        "load_ms": 0.945989,
+        "query_ms": 8.53413,
+        "peak_kib": 7412,
+        "mods": 1308
+      },
+      {
+        "load_ms": 1.1438,
+        "query_ms": 8.59139,
+        "peak_kib": 7368,
+        "mods": 1308
+      },
+      {
+        "load_ms": 1.21354,
+        "query_ms": 8.58517,
+        "peak_kib": 7388,
+        "mods": 1308
+      }
+    ]
+  },
+  "limits": [
+    "Optimized C++ CLI on this Termux device; not a rendered game or FPS benchmark.",
+    "Fresh process per sample, warm OS file cache; no claim of cold storage latency.",
+    "sqlite-full materializes the current DTOs; sqlite-lazy is a different architecture.",
+    "Database projects current DTOs; JSON remains the full public interchange contract.",
+    "sqlite-full/lazy use a prototype loader; sqlite-bundled uses the hardened production reader.",
+    "Provider is recorded separately; production benchmarks can link the exact pinned game object.",
+    "Lazy SQL search uses raw descriptions; it is not certified equivalent to truncated/sanitized UI substring search.",
+    "Peak RSS uses Linux /proc/self/status VmHWM after exec, covering 100 search/page operations; no per-allocator memory claim.",
+    "A production SQLite dependency and full packaged APK size are not measured here."
+  ]
+}

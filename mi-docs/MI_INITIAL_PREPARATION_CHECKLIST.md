@@ -727,3 +727,39 @@ tras una interrupción entrar a Explorar mods recupera antes del refresco local.
 APK /sdcard/Download/sm64coopdx-MI-updates-local.apk: 124369209 bytes. SHA-256
 4daefaf42f9a99b1b2c02b0569f3d902480b85c6fcb99c76ea6cbdac3590be3d.
 Sin commit/push, release ni Actions.
+
+
+## Fuente CDN exclusiva — 2026-10-30
+
+Se sustituye el origen anterior y la política de fallback por el catálogo
+personalizado y mirror como única descarga. Contrato y límite DynOS:
+[CDN_ONLY_CATALOG.md](CDN_ONLY_CATALOG.md). Las notas anteriores conservan historia.
+
+
+## Catálogo incluido — 2026-10-30
+
+La apertura usa caché o catálogo incluido sin descargar JSON; solo Buscar novedades
+consulta el repositorio. Contrato: [BUNDLED_CATALOG.md](BUNDLED_CATALOG.md).
+
+
+## Catálogo incluido SQLite — 2026-10-30
+
+La copia incluida pasa a una base SQLite de solo lectura. JSON sigue siendo el
+contrato remoto y el formato de caché actual. Arquitectura, límites y pruebas:
+[CATALOG_DATABASE.md](CATALOG_DATABASE.md). Esta nota supera la representación
+JSON literal incluida descrita anteriormente, sin cambiar sus IDs.
+
+
+### Validación local SQLite incluida
+
+Regresiones, identificación del APK, límites y mediciones finales en
+[CATALOG_DATABASE.md](CATALOG_DATABASE.md). Lista física pendiente; la caché
+remota sigue siendo JSON. No atribuir la aceleración a esa ruta ni a los FPS.
+
+
+## Modo incluido exclusivo — 2026-10-30
+
+Este build ignora cachés remotas y no ofrece Buscar novedades. Fuente única: DB
+incluida en el APK. Estado vigente: [INCLUDED_ONLY_BUILD.md](INCLUDED_ONLY_BUILD.md).
+Plan posterior: [REMOTE_DATABASE_PLAN.md](REMOTE_DATABASE_PLAN.md). Las notas
+anteriores de refresco remoto describen una etapa previa.

@@ -124,7 +124,7 @@ try:
         assert not list(directory.rglob('*.tmp-*'))
         assert not list(directory.rglob('mods'))
         if args.live:
-            with urllib.request.urlopen('https://raw.githubusercontent.com/retired64/sm64cdpy.releases/main/db/database_sm64coopdx.json', timeout=40) as response:
+            with urllib.request.urlopen('https://raw.githubusercontent.com/retired64/sm64cdpy.releases/r2-phase6-flutter-fallback/assets/db/database_sm64coopdx.json', timeout=40) as response:
                 catalog = json.load(response)
             urls = [m.get('image_url') or m.get('icon_url') for m in catalog['mods']]
             url = next(u for u in urls if u and u.startswith('https://'))

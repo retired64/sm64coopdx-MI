@@ -1465,6 +1465,11 @@ $(GLOBAL_ASM_DEP).$(NON_MATCHING):
 # Compilation Recipes                                                          #
 #==============================================================================#
 
+# Keep the pinned SQLite dependency's debug tables out of local APKs.
+# Does not change the selected optimization level or debug settings of game code.
+$(BUILD_DIR)/src/pc/mod_integrations/mi_sqlite.o: CFLAGS += -g0
+$(BUILD_DIR)/src/pc/mod_integrations/mi_sqlite.o: Makefile
+
 # Compile C++ code
 $(BUILD_DIR)/%.o: %.cpp
 	$(call print,Compiling:,$<,$@)

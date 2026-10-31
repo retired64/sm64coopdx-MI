@@ -29,7 +29,7 @@ struct MiCatalogFile {
     char modId[64], versionId[160], fileId[160];
     char version[96], filename[256], label[192];
     char role[24];
-    char url[2048], mirror[2048], sha256[65];
+    char url[2048], mirror[2048], sha256[65]; /* url: CDN only; mirror reserved/empty. */
     uint64_t size;
     bool supported, recommended;
 };
@@ -47,6 +47,10 @@ const struct MiCatalogFile* mi_catalog_file(const struct MiCatalog* catalog, siz
 
 struct MiCatalog* mi_catalog_parse(const char* json, size_t length);
 struct MiCatalog* mi_catalog_parse_language(const char* json, size_t length, const char* language);
+/* Read-only SQLite snapshot; never executes mod code or writes the input. */
+struct MiCatalog* mi_catalog_parse_database(const unsigned char* bytes, size_t length, const char* language);
+/* Validated public catalog included in the binary; caller owns snapshot. */
+struct MiCatalog* mi_catalog_bundled(const char* language);
 struct MiCatalog* mi_catalog_sample(void);
 void mi_catalog_free(struct MiCatalog* catalog);
 enum MiCatalogStatus mi_catalog_status(const struct MiCatalog* catalog);

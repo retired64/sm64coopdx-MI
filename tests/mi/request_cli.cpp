@@ -6,7 +6,8 @@
 
 int main(int argc, char** argv) {
     if (argc < 4) return 2;
-    auto* request = argc == 5 && std::strcmp(argv[4], "fresh") == 0 ?
+    auto* request = argc == 5 && std::strcmp(argv[4], "refresh") == 0 ?
+        mi_catalog_request_refresh(argv[1], argv[3]) : argc == 5 && std::strcmp(argv[4], "fresh") == 0 ?
         mi_catalog_request_start(argv[1], argv[3]) : mi_catalog_request_start_url(argv[1], argv[3], argv[2]);
     if (!request) return 3;
     if (argc == 5 && std::strcmp(argv[4], "cancel") == 0) {

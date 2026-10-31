@@ -22,7 +22,7 @@ static MiUpdateDecision compare(const json& value,MiUpdateCandidate* out=nullptr
 static json version(const char* id,const char* label,const char* date){
     return {{"version_id",id},{"version",label},{"release_date",date},{"resolved",true},{"files",json::array({{
         {"file_id",std::string("primary-")+id},{"filename","mod.zip"},{"download_url","https://example.invalid/mod.zip"},
-        {"role","primary"},{"recommended",true},{"requires_primary",false}}})}};
+        {"mirror_url","https://mods-cdn.sm64cdpy.org/test/mod.zip"},{"mirror_status","available"},{"role","primary"},{"recommended",true},{"requires_primary",false}}})}};
 }
 static MiUpdatesInfo scan(const fs::path& root,const json& value,MiUpdateCandidate* candidate=nullptr){
     auto catalog=parse(value);auto* request=mi_updates_start(root.c_str(),catalog.get());assert(request);

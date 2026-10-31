@@ -8,6 +8,8 @@
 #include <string>
 #include <stdexcept>
 #include <vector>
+#include <memory>
+#include "pc/utils/sqlite/sqlite3.h"
 
 using nlohmann::json;
 
@@ -23,6 +25,10 @@ constexpr size_t MAX_BYTES = 16 * 1024 * 1024;
 constexpr size_t MAX_MODS = 5000;
 const char SAMPLE[] =
 #include "mi_catalog_sample.inc"
+;
+
+const char BUNDLED[] =
+#include "mi_catalog_bundled.inc"
 ;
 
 std::string field(const json& object, const char* key) {
@@ -149,9 +155,10 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
                 for (const auto& file : *files) {
                     if (!file.is_object()) return catalog;
                     auto fileId = field(file, "file_id");
-                    auto url = field(file, "download_url");
-                    if (fileId.empty() || !fileIds.insert(fileId).second || field(file, "filename").empty() ||
-                        (url.compare(0, 8, "https://") != 0 && url.compare(0, 7, "http://") != 0)) return catalog;
+                    auto url = field(file, "mirror_url");
+                    const bool available = field(file, "mirror_status") == "available";
+                    const bool cdn = url.compare(0, 30, "https://mods-cdn.sm64cdpy.org/") == 0;
+                    if (fileId.empty() || !fileIds.insert(fileId).second || field(file, "filename").empty()) return catalog;
                     if (++fileTotal > 20000) return catalog;
                     MiCatalogFile source = {};
                     auto exact = [](auto& out, const std::string& value) {
@@ -167,14 +174,13 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
                     bool hashValid = hash.empty() || (hash.size() == 64 && std::all_of(hash.begin(), hash.end(),
                         [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }));
                     if (hashValid) exact(source.sha256, hash);
-                    if (file.contains("size_bytes") && file["size_bytes"].is_number_unsigned()) source.size = file["size_bytes"].get<uint64_t>();
-                    if (field(file, "mirror_status") == "available" && field(file, "mirror_priority") == "fallback")
-                        exact(source.mirror, field(file, "mirror_url"));
+                    if (file.contains("mirror_size_bytes") && file["mirror_size_bytes"].is_number_unsigned()) source.size = file["mirror_size_bytes"].get<uint64_t>();
                     std::string filename = field(file, "filename");
                     bool type = filename.size() > 4 && (filename.substr(filename.size()-4) == ".lua" || filename.substr(filename.size()-4) == ".zip");
                     source.recommended = file.value("recommended", false);
                     source.supported = exactFields && hashValid && type && resolved->get<bool>() &&
-                        !file.value("requires_primary", false) && url.compare(0, 8, "https://") == 0;
+                        !file.value("requires_primary", false) && available && cdn &&
+                        !contains_folded(field(mod, "category").c_str(), "dynos");
                     modFiles.push_back(source);
                 }
             }
@@ -217,6 +223,10 @@ extern "C" struct MiCatalog* mi_catalog_parse_language(const char* text, size_t 
 
 extern "C" struct MiCatalog* mi_catalog_parse(const char* text, size_t length) {
     return mi_catalog_parse_language(text, length, "en");
+}
+#include "mi_catalog_database.inc"
+extern "C" struct MiCatalog* mi_catalog_bundled(const char* language) {
+    return mi_catalog_parse_database(reinterpret_cast<const unsigned char*>(BUNDLED), sizeof(BUNDLED) - 1, language);
 }
 extern "C" struct MiCatalog* mi_catalog_sample(void) { return mi_catalog_parse(SAMPLE, sizeof(SAMPLE) - 1); }
 extern "C" void mi_catalog_free(struct MiCatalog* catalog) { delete catalog; }

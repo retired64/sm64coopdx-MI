@@ -27,3 +27,6 @@
 *.lvl binary
 *.tex binary
 *.luac binary
+
+# Preserve the byte-identical vendored amalgamation, including upstream whitespace.
+src/pc/utils/sqlite/sqlite3.c whitespace=-blank-at-eol

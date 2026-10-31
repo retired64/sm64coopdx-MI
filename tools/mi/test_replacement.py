@@ -71,6 +71,7 @@ def main():
                 mod['versions'].append({'version_id': identity, 'version': label, 'release_date': date, 'resolved': True,
                     'files': [{'file_id': 'primary-' + identity, 'filename': 'pack.zip',
                                'download_url': 'https://example.invalid/' + identity,
+                               'mirror_url': 'https://mods-cdn.sm64cdpy.org/test/' + identity, 'mirror_status': 'available',
                                'role': 'primary', 'recommended': True, 'requires_primary': False}]})
             catalog = directory / 'catalog.json'
             catalog.write_text(json.dumps(base))

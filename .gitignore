@@ -108,3 +108,5 @@ platform/app/.cxx
 platform/app/src/main/assets
 platform/app/build/
 platform/app/debug/
+# Local bytecode for MI native-tool helpers
+/tools/mi/__pycache__/
